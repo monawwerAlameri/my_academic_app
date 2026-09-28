@@ -1,6 +1,4 @@
 <?php
-// backend/admin/get_users.php
-// Returns all students and faculty members, for the User Management screen (Figure 30).
 
 header('Content-Type: application/json');
 session_start();
@@ -18,26 +16,29 @@ if (!isset($_SESSION['admin_id'])) {
 $users = [];
 
 // Students
-$result = $conn->query("SELECT student_id, full_name, email, phone_number FROM student");
+$result = $conn->query("SELECT student_id, full_name, email, phone_number, account_status FROM student");
 while ($row = $result->fetch_assoc()) {
     $users[] = [
         'userId' => $row['student_id'],
         'fullName' => $row['full_name'],
         'email' => $row['email'],
         'phoneNumber' => $row['phone_number'],
-        'role' => 'Student'
+        'role' => 'Student',
+        'accountStatus' => $row['account_status']
     ];
 }
 
 // Faculty members
-$result = $conn->query("SELECT faculty_id, full_name, email, phone_number FROM facultymember");
+$result = $conn->query("SELECT faculty_id, full_name, email, phone_number, office_location, account_status FROM facultymember");
 while ($row = $result->fetch_assoc()) {
     $users[] = [
         'userId' => $row['faculty_id'],
         'fullName' => $row['full_name'],
         'email' => $row['email'],
         'phoneNumber' => $row['phone_number'],
-        'role' => 'Faculty'
+        'officeLocation' => $row['office_location'],
+        'role' => 'Faculty',
+        'accountStatus' => $row['account_status']
     ];
 }
 
