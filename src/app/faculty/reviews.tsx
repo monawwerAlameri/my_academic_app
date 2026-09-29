@@ -27,7 +27,7 @@ export default function FacultyReviewsScreen() {
 
   const selected = REVIEWS.find((r) => r.id === selectedId) ?? null;
 
-  // ----- Detail view (inline, same file) -----
+  
   if (selected) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -78,7 +78,7 @@ export default function FacultyReviewsScreen() {
     );
   }
 
-  // ----- List view -----
+  
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
