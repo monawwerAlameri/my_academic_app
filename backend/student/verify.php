@@ -7,7 +7,7 @@ $phone_number = $data['phone_number'] ?? '';
 $code = $data['code'] ?? '';
 
 if (empty($phone_number) || empty($code)) {
-    echo json_encode(["success" => false, "message" => "رقم الجوال والكود مطلوبان"]);
+   echo json_encode(["success" => false, "code" => "VERIFICATION_REQUIRED"]);
     exit;
 }
 
@@ -19,19 +19,19 @@ $row = $result->fetch_assoc();
 $stmt->close();
 
 if (!$row) {
-    echo json_encode(["success" => false, "message" => "كود التحقق غير صحيح"]);
+    echo json_encode(["success" => false, "code" => "INVALID_CODE"]);
     $conn->close();
     exit;
 }
 
 if ($row['is_used'] == 1) {
-    echo json_encode(["success" => false, "message" => "تم استخدام هذا الكود من قبل"]);
+    echo json_encode(["success" => false, "code" => "CODE_ALREADY_USED"]);
     $conn->close();
     exit;
 }
 
 if (strtotime($row['expires_at']) < time()) {
-    echo json_encode(["success" => false, "message" => "انتهت صلاحية الكود"]);
+    echo json_encode(["success" => false, "code" => "CODE_EXPIRED"]);
     $conn->close();
     exit;
 }
@@ -41,6 +41,6 @@ $updateStmt->bind_param("i", $row['verification_id']);
 $updateStmt->execute();
 $updateStmt->close();
 
-echo json_encode(["success" => true, "message" => "تم التحقق من الكود بنجاح"]);
+echo json_encode(["success" => true, "code" => "VERIFIED_SUCCESS"]);
 
 $conn->close();

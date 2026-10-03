@@ -12,11 +12,11 @@ $student_id = $data['student_id'] ?? '';
 $password   = $data['password'] ?? '';
 
 if (empty($student_id) || empty($password)) {
-    echo json_encode(["success" => false, "message" => "الرقم الجامعي وكلمة المرور مطلوبان"]);
+    echo json_encode(["success" => false, "code" => "LOGIN_FIELDS_REQUIRED"]);
     exit;
 }
 
-$stmt = $conn->prepare("SELECT password, phone_number FROM student WHERE student_id = ?");
+$stmt = $conn->prepare("SELECT password, phone_number, full_name FROM student WHERE student_id = ?");
 $stmt->bind_param("s", $student_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -24,13 +24,13 @@ $student = $result->fetch_assoc();
 $stmt->close();
 
 if (!$student) {
-    echo json_encode(["success" => false, "message" => "الرقم الجامعي أو كلمة المرور غير صحيحة"]);
+    echo json_encode(["success" => false, "code" => "INVALID_CREDENTIALS"]);
     $conn->close();
     exit;
 }
 
 if (!password_verify($password, $student['password'])) {
-    echo json_encode(["success" => false, "message" => "الرقم الجامعي أو كلمة المرور غير صحيحة"]);
+    echo json_encode(["success" => false, "code" => "INVALID_CREDENTIALS"]);
     $conn->close();
     exit;
 }
@@ -47,18 +47,19 @@ if ($stmt->execute()) {
     $sendResult = sendSms($phone_number, $code);
 
     echo json_encode([
-        "success" => true,
-        "message" => "تم إرسال كود التحقق بنجاح",
-        "data" => [
-            "phone_number" => $phone_number,
-            "code" => $sendResult["code"]
-        ]
-    ]);
+    "success" => true,
+    "code" => "OTP_GENERATED",
+    "data" => [
+        "phone_number" => $phone_number,
+        "full_name" => $student['full_name'],
+        "code" => $sendResult["code"]
+    ]
+]);
 } else {
     echo json_encode([
-        "success" => false,
-        "message" => "حدث خطأ أثناء إرسال كود التحقق"
-    ]);
+    "success" => false,
+    "code" => "OTP_SEND_FAILED"
+]);
 }
 
 $stmt->close();

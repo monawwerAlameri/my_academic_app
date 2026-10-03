@@ -11,35 +11,40 @@ $email        = $data['email'] ?? '';
 $password     = $data['password'] ?? '';
 
 if (empty($student_id) || empty($full_name) || empty($phone_number) || empty($email) || empty($password)) {
-    echo json_encode(["success" => false, "message" => "جميع الحقول مطلوبة"]);
+    echo json_encode(["success" => false, "code" => "ALL_FIELDS_REQUIRED"]);
     exit;
 }
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    echo json_encode(["success" => false, "message" => "صيغة البريد الإلكتروني غير صحيحة"]);
+    echo json_encode(["success" => false, "code" => "INVALID_EMAIL"]);
+    exit;
+}
+if (!preg_match('/^05[0-9]{8}$/', $phone_number)) {
+    echo json_encode(["success" => false, "code" => "INVALID_PHONE_FORMAT"]);
     exit;
 }
 
-$otpCheckStmt = $conn->prepare("SELECT verification_id FROM verificationcode WHERE phone_number = ? AND is_used = 1 ORDER BY verification_id DESC LIMIT 1");
+$otpCheckStmt = $conn->prepare("SELECT expires_at FROM verificationcode WHERE phone_number = ? AND is_used = 1 ORDER BY verification_id DESC LIMIT 1");
 $otpCheckStmt->bind_param("s", $phone_number);
 $otpCheckStmt->execute();
 $otpCheckResult = $otpCheckStmt->get_result();
+$otpRow = $otpCheckResult->fetch_assoc();
 
-if ($otpCheckResult->num_rows == 0) {
-    echo json_encode(["success" => false, "message" => "لم يتم التحقق من رقم الجوال"]);
+if (!$otpRow || strtotime($otpRow['expires_at']) < time()) {
+    echo json_encode(["success" => false, "code" => "PHONE_NOT_VERIFIED"]);
     $otpCheckStmt->close();
     $conn->close();
     exit;
 }
 $otpCheckStmt->close();
 
-$checkStmt = $conn->prepare("SELECT student_id FROM student WHERE student_id = ? OR email = ?");
-$checkStmt->bind_param("ss", $student_id, $email);
+$checkStmt = $conn->prepare("SELECT student_id FROM student WHERE student_id = ? OR email = ? OR phone_number = ?");
+$checkStmt->bind_param("sss", $student_id, $email, $phone_number);
 $checkStmt->execute();
 $checkResult = $checkStmt->get_result();
 
 if ($checkResult->num_rows > 0) {
-    echo json_encode(["success" => false, "message" => "الرقم الجامعي أو البريد الإلكتروني مسجل مسبقاً"]);
+    echo json_encode(["success" => false, "code" => "ALREADY_REGISTERED"]);
     $checkStmt->close();
     $conn->close();
     exit;
@@ -52,9 +57,9 @@ $insertStmt = $conn->prepare("INSERT INTO student (student_id, full_name, email,
 $insertStmt->bind_param("sssss", $student_id, $full_name, $email, $hashedPassword, $phone_number);
 
 if ($insertStmt->execute()) {
-    echo json_encode(["success" => true, "message" => "تم إنشاء الحساب بنجاح"]);
+    echo json_encode(["success" => true, "code" => "REGISTER_SUCCESS"]);
 } else {
-    echo json_encode(["success" => false, "message" => "حدث خطأ أثناء إنشاء الحساب"]);
+    echo json_encode(["success" => false, "code" => "REGISTER_FAILED"]);
 }
 
 $insertStmt->close();

@@ -13,7 +13,11 @@ $data = json_decode(file_get_contents("php://input"), true);
 $phone_number = $data['phone_number'] ?? '';
 
 if (empty($phone_number)) {
-    echo json_encode(["success" => false, "message" => "رقم الجوال مطلوب"]);
+   echo json_encode(["success" => false, "code" => "PHONE_REQUIRED"]);
+    exit;
+}
+if (!preg_match('/^05[0-9]{8}$/', $phone_number)) {
+    echo json_encode(["success" => false, "code" => "INVALID_PHONE_FORMAT"]);
     exit;
 }
 
@@ -27,15 +31,16 @@ if ($stmt->execute()) {
     $sendResult = sendSms($phone_number, $code);
 
     echo json_encode([
-        "success" => true,
-        "message" => "تم توليد كود التحقق بنجاح",
-        "data" => ["code" => $sendResult["code"]]
-    ]);
+    "success" => true,
+    "code" => "OTP_GENERATED",
+    "data" => ["code" => $sendResult["code"]]
+]);
+
 } else {
     echo json_encode([
-        "success" => false,
-        "message" => "حدث خطأ أثناء توليد الكود"
-    ]);
+    "success" => false,
+    "code" => "OTP_SEND_FAILED"
+]);
 }
 
 $stmt->close();
