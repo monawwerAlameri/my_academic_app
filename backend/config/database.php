@@ -1,5 +1,5 @@
 <?php
-
+date_default_timezone_set('Asia/Riyadh');
 $host = "localhost";
 $username = "root";
 $password = "";
