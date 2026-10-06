@@ -18,7 +18,9 @@ if (empty($appointment_id)) {
 $stmt = $conn->prepare("
     SELECT
         appointment.faculty_id,
+        appointment.appointment_date,
         appointment.appointment_time,
+        appointment.appointment_end_time,
         appointment.status,
         student.full_name AS student_name,
         facultymember.full_name AS doctor_name
@@ -46,15 +48,28 @@ if ($appointment['status'] != 'Booked') {
 }
 
 $faculty_id        = $appointment['faculty_id'];
+$date_text         = date("j M Y", strtotime($appointment['appointment_date']));
 $time_text         = date("g:i A", strtotime($appointment['appointment_time']));
 $now               = date("Y-m-d H:i:s");
 $notification_type = "Cancellation";
 $student_message   = "Your appointment with " . $appointment['doctor_name'] . " at " . $time_text . " has been cancelled.";
 $doctor_message    = $appointment['student_name'] . " cancelled their appointment at " . $time_text . ".";
 
+// The slot of this appointment, in the same format used by the waiting list
+$slot_start   = $appointment['appointment_date'] . ' ' . $appointment['appointment_time'];
+$slot_end     = $appointment['appointment_date'] . ' ' . $appointment['appointment_end_time'];
+$slot_started = strtotime($slot_start) <= time();
+
 $conn->begin_transaction();
 
 try {
+    // Lock the faculty row so the waiting list is not changed by another request at the same time
+    $lockStmt = $conn->prepare("SELECT faculty_id FROM facultymember WHERE faculty_id = ? FOR UPDATE");
+    $lockStmt->bind_param("s", $faculty_id);
+    $lockStmt->execute();
+    $lockStmt->get_result();
+    $lockStmt->close();
+
     $updateStmt = $conn->prepare("UPDATE appointment SET status = 'Cancelled' WHERE appointment_id = ? AND student_id = ? AND status = 'Booked'");
     $updateStmt->bind_param("is", $appointment_id, $student_id);
     $updateStmt->execute();
@@ -76,6 +91,94 @@ try {
     $notifStmt->bind_param("ssssi", $faculty_id, $notification_type, $doctor_message, $now, $appointment_id);
     $notifStmt->execute();
     $notifStmt->close();
+
+    if ($slot_started) {
+        // The appointment time already started, so nobody can take this slot: clear its waiting list
+        $clearStmt = $conn->prepare("DELETE FROM waitinglist WHERE faculty_id = ? AND requested_time = ? AND requested_end_time = ?");
+        $clearStmt->bind_param("sss", $faculty_id, $slot_start, $slot_end);
+        $clearStmt->execute();
+        $clearStmt->close();
+    } else {
+        // First student in the waiting list of this slot
+        $firstStmt = $conn->prepare("
+            SELECT
+                waitinglist.waiting_id,
+                waitinglist.student_id,
+                waitinglist.appointment_type,
+                waitinglist.consultation_type,
+                waitinglist.queue_position,
+                student.full_name AS waiting_student_name
+            FROM waitinglist
+            INNER JOIN student ON waitinglist.student_id = student.student_id
+            WHERE waitinglist.faculty_id = ?
+            AND waitinglist.requested_time = ?
+            AND waitinglist.requested_end_time = ?
+            ORDER BY waitinglist.queue_position ASC
+            LIMIT 1
+        ");
+        $firstStmt->bind_param("sss", $faculty_id, $slot_start, $slot_end);
+        $firstStmt->execute();
+        $first = $firstStmt->get_result()->fetch_assoc();
+        $firstStmt->close();
+
+        if ($first) {
+            // Location comes from the faculty schedule for the type the waiting student chose
+            $day_name = date('l', strtotime($appointment['appointment_date']));
+            $locStmt = $conn->prepare("
+                SELECT location
+                FROM schedule
+                WHERE faculty_id = ?
+                AND appointment_type = ?
+                AND LOWER(day_of_week) = LOWER(?)
+                AND start_time = ?
+                AND end_time = ?
+            ");
+            $locStmt->bind_param("sssss", $faculty_id, $first['appointment_type'], $day_name, $appointment['appointment_time'], $appointment['appointment_end_time']);
+            $locStmt->execute();
+            $slot = $locStmt->get_result()->fetch_assoc();
+            $locStmt->close();
+
+            if ($slot) {
+                // Automatic booking for the first student in the waiting list
+                $insertStmt = $conn->prepare("INSERT INTO appointment (student_id, faculty_id, appointment_date, appointment_time, appointment_end_time, appointment_type, consultation_type, status, location) VALUES (?, ?, ?, ?, ?, ?, ?, 'Booked', ?)");
+                $insertStmt->bind_param("ssssssss", $first['student_id'], $faculty_id, $appointment['appointment_date'], $appointment['appointment_time'], $appointment['appointment_end_time'], $first['appointment_type'], $first['consultation_type'], $slot['location']);
+                $insertStmt->execute();
+                $new_appointment_id = $conn->insert_id;
+                $insertStmt->close();
+
+                // Remove her from the waiting list
+                $removeStmt = $conn->prepare("DELETE FROM waitinglist WHERE waiting_id = ?");
+                $removeStmt->bind_param("i", $first['waiting_id']);
+                $removeStmt->execute();
+                $removeStmt->close();
+
+                // Everyone behind her moves one position forward
+                $shiftStmt = $conn->prepare("
+                    UPDATE waitinglist
+                    SET queue_position = queue_position - 1
+                    WHERE faculty_id = ? AND requested_time = ? AND requested_end_time = ?
+                    AND queue_position > ?
+                ");
+                $shiftStmt->bind_param("sssi", $faculty_id, $slot_start, $slot_end, $first['queue_position']);
+                $shiftStmt->execute();
+                $shiftStmt->close();
+
+                // Booking confirmation for her and for the faculty (same as a normal booking)
+                $confirm_type     = "Booking Confirmation";
+                $new_student_msg  = "Your appointment with " . $appointment['doctor_name'] . " on " . $date_text . " at " . $time_text . " has been confirmed.";
+                $new_doctor_msg   = $first['waiting_student_name'] . " booked an appointment on " . $date_text . " at " . $time_text . ".";
+
+                $confirmStmt = $conn->prepare("INSERT INTO notification (user_id, notification_type, message, notification_time, appointment_id) VALUES (?, ?, ?, ?, ?)");
+
+                $confirmStmt->bind_param("ssssi", $first['student_id'], $confirm_type, $new_student_msg, $now, $new_appointment_id);
+                $confirmStmt->execute();
+
+                $confirmStmt->bind_param("ssssi", $faculty_id, $confirm_type, $new_doctor_msg, $now, $new_appointment_id);
+                $confirmStmt->execute();
+                $confirmStmt->close();
+            }
+        }
+    }
 
     $conn->commit();
     echo json_encode(["success" => true, "code" => "APPOINTMENT_CANCELLED"]);
