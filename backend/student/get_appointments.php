@@ -15,6 +15,7 @@ $stmt = $conn->prepare("
         appointment.appointment_id,
         appointment.appointment_date,
         appointment.appointment_time,
+        appointment.appointment_end_time,
         appointment.appointment_type,
         appointment.consultation_type,
         appointment.status,
