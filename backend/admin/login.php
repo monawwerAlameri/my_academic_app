@@ -1,6 +1,4 @@
 <?php
-// backend/admin/login.php
-// Admin login. Expects POST JSON: { "email": "...", "password": "..." }
 
 header('Content-Type: application/json');
 session_start();
@@ -36,7 +34,7 @@ if (!$admin || !password_verify($password, $admin['password'])) {
     exit;
 }
 
-// Store admin identity in session
+
 $_SESSION['admin_id'] = $admin['admin_id'];
 $_SESSION['role'] = 'admin';
 

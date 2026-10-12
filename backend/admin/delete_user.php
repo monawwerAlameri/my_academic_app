@@ -1,6 +1,5 @@
 <?php
-// backend/admin/get_users.php
-// Returns all students and faculty members, for the User Management screen (Figure 30).
+
 
 header('Content-Type: application/json');
 session_start();
@@ -17,7 +16,7 @@ if (!isset($_SESSION['admin_id'])) {
 
 $users = [];
 
-// Students
+
 $result = $conn->query("SELECT student_id, full_name, email, phone_number FROM student");
 while ($row = $result->fetch_assoc()) {
     $users[] = [
@@ -29,7 +28,7 @@ while ($row = $result->fetch_assoc()) {
     ];
 }
 
-// Faculty members
+
 $result = $conn->query("SELECT faculty_id, full_name, email, phone_number FROM facultymember");
 while ($row = $result->fetch_assoc()) {
     $users[] = [
