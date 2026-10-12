@@ -1,7 +1,5 @@
 <?php
-// backend/admin/get_appointments.php
-// Returns appointments for the Admin "Appointments Monitoring" screen (Figure 31).
-// Optional query param: ?status=Pending (or Confirmed / Cancelled / Completed). No param = all.
+
 
 header('Content-Type: application/json');
 session_start();

@@ -1,7 +1,5 @@
 <?php
-// backend/admin/update_user_status.php
-// Admin suspends or reactivates a student / faculty account (e.g. doctor on leave).
-// POST JSON: { "userId": "...", "role": "Student" | "Faculty", "accountStatus": "Active" | "Suspended" }
+
 
 header('Content-Type: application/json');
 session_start();
@@ -42,7 +40,7 @@ $stmt->execute();
 $affected = $stmt->affected_rows;
 $stmt->close();
 
-// affected_rows is 0 when the status is already the same OR the user doesn't exist
+
 if ($affected === 0) {
     $checkSql = ($role === 'Student')
         ? "SELECT student_id FROM student WHERE student_id = ?"
