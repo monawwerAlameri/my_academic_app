@@ -111,8 +111,9 @@ function WaitingRow({
     <View style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
       <View style={{ flex: 1 }}>
         <Text style={[styles.doctorName, { color: colors.primary }]}>{item.doctor}</Text>
-        <Text style={[styles.officeText, { color: colors.
-        textSecondary }]}>{item.office}</Text>
+        <Text style={[styles.officeText, { color: colors.textSecondary }]}>
+          {item.office}
+          </Text>
       </View>
 
       <View style={{ flex: 1 }}>
@@ -127,7 +128,7 @@ function WaitingRow({
         </View>
 
         <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
-          <View style={[styles.progressFill, { width: '${progressPercent}%' as any, backgroundColor: progressColor }]} />
+          <View style={[styles.progressFill, { width: `${progressPercent}%` as any, backgroundColor: progressColor }]} />
         </View>
 
         <Text style={[styles.aheadText, { color: colors.textSecondary }]}>
