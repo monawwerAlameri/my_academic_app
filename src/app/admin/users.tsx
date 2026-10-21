@@ -17,7 +17,7 @@ import { AdminHeader } from '../../components/AdminHeader';
 import { AdminTabBar } from '../../components/AdminTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { AdminUser, initialUsers, UserRole } from '../../services/adminMockData';
-
+import { commonStyles } from '../../theme/styles';
 type Filter = 'all' | UserRole;
 type ActionType = 'delete' | 'suspend' | 'activate';
 const FILTERS: Filter[] = ['all', 'student', 'faculty'];
@@ -157,13 +157,13 @@ export default function AdminUsers() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <AdminHeader title={t('userManagement')} />
 
-        <View style={[styles.searchBox, { borderColor: colors.border, backgroundColor: colors.cardBackground }, isRTL && { flexDirection: 'row-reverse' }]}>
+        <View style={[commonStyles.searchBox, styles.searchBox, { borderColor: colors.border, backgroundColor: colors.cardBackground }, isRTL && { flexDirection: 'row-reverse' }]}>
           <Ionicons name="search" size={20} color={colors.primary} />
           <TextInput
-            style={[styles.searchInput, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
+            style={[commonStyles.searchInput, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
             placeholder={t('searchUser')}
             placeholderTextColor={colors.placeholder}
             value={query}
@@ -182,24 +182,24 @@ export default function AdminUsers() {
           <Text style={{ color: colors.white, fontWeight: '700', fontSize: 14 }}>{t('addDoctor')}</Text>
         </TouchableOpacity>
 
-        <View style={[styles.chipsRow, isRTL && { flexDirection: 'row-reverse' }]}>
+        <View style={[commonStyles.chipsRow, isRTL && { flexDirection: 'row-reverse' }]}>
           {FILTERS.map((f) => {
             const active = filter === f;
             return (
               <TouchableOpacity
                 key={f}
-                style={[styles.chip, { borderColor: colors.border }, active && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                style={[commonStyles.chip, { borderColor: colors.border }, active && { backgroundColor: colors.primary, borderColor: colors.primary }]}
                 onPress={() => setFilter(f)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.chipText, { color: active ? colors.white : colors.textSecondary }]}>{filterLabel(f)}</Text>
-              </TouchableOpacity>
+                <Text style={[commonStyles.chipText, { color: active ? colors.white : colors.textSecondary }]}>{filterLabel(f)}</Text>
+                </TouchableOpacity>
             );
           })}
         </View>
 
         {visible.length === 0 && (
-          <Text style={[styles.empty, { color: colors.textSecondary }]}>{t('noUsersFound')}</Text>
+          <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noUsersFound')}</Text>
         )}
 
         {visible.map((u) => {
@@ -208,7 +208,7 @@ export default function AdminUsers() {
             <View
               key={u.id}
               style={[
-                styles.card,
+                commonStyles.card, styles.card,
                 { backgroundColor: colors.cardBackground, borderColor: colors.border },
                 isRTL && { flexDirection: 'row-reverse' },
                 isSuspended && { opacity: 0.65 },
@@ -319,15 +319,9 @@ export default function AdminUsers() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { padding: 20 },
-  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, paddingHorizontal: 14, height: 50, marginBottom: 12 },
-  searchInput: { flex: 1, fontSize: 15, height: '100%' },
+  searchBox: { marginBottom: 12 },
   addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 46, borderRadius: 14, marginBottom: 14 },
-  chipsRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1 },
-  chipText: { fontSize: 13, fontWeight: '600' },
-  empty: { textAlign: 'center', marginTop: 40, fontSize: 14 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, padding: 12, marginBottom: 12 },
+  card: { alignItems: 'center', gap: 10 },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 15, fontWeight: '700' },
   nameRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginBottom: 2 },

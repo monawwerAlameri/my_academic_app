@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { AdminTabBar } from '../../components/AdminTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { commonStyles } from '../../theme/styles';
 
 export default function SettingsScreen() {
   const { colors, t, isDarkMode, toggleDarkMode, language, toggleLanguage, isRTL } =
@@ -40,24 +41,24 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, isRTL && { direction: 'rtl' }]}
+        contentContainerStyle={[commonStyles.scrollContentHeader, isRTL && { direction: 'rtl' }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={[styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>{t('settingsTitle')}</Text>
+        <View style={[commonStyles.headerRow, styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
+          <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>{t('settingsTitle')}</Text>
         </View>
 
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
           {t('settingsSubtitle')}
         </Text>
 
         {/* Navigation rows */}
-        <View style={[styles.listCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        <View style={[commonStyles.panel, styles.listCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
           {NAV_ROWS.map((row) => (
             <TouchableOpacity
               key={row.key}
-              style={[styles.row, { borderBottomColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}
+              style={[commonStyles.menuRow, styles.row, { borderBottomColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}
               activeOpacity={0.7}
               onPress={() => handlePress(row.key)}
             >
@@ -73,7 +74,7 @@ export default function SettingsScreen() {
           ))}
 
           {/* Dark mode toggle */}
-          <View style={[styles.row, { borderBottomColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
+          <View style={[commonStyles.menuRow, styles.row, { borderBottomColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
             <Ionicons name="moon-outline" size={20} color={colors.primary} />
             <Text style={[styles.rowLabel, { color: colors.primary }]}>{t('darkMode')}</Text>
             <View style={isRTL ? { marginRight: 'auto' } : { marginLeft: 'auto' }}>
@@ -87,12 +88,12 @@ export default function SettingsScreen() {
           </View>
 
           {/* Language toggle */}
-          <View style={[styles.row, isRTL && { flexDirection: 'row-reverse' }]}>
+          <View style={[commonStyles.menuRow, styles.row, isRTL && { flexDirection: 'row-reverse' }]}>
             <Ionicons name="language-outline" size={20} color={colors.primary} />
             <Text style={[styles.rowLabel, { color: colors.primary }]}>{t('arabic')}</Text>
             <View style={isRTL ? { marginRight: 'auto' } : { marginLeft: 'auto' }}>
               <Switch
-                value={language === 'ar'}
+              value={language === 'ar'}
                 onValueChange={toggleLanguage}
                 trackColor={{ false: colors.border, true: colors.accent }}
                 thumbColor={colors.
@@ -104,7 +105,7 @@ export default function SettingsScreen() {
 
         {/* Logout */}
         <TouchableOpacity
-          style={[styles.logoutRow, isRTL && { flexDirection: 'row-reverse' }]}
+          style={[commonStyles.menuRow, styles.logoutRow, isRTL && { flexDirection: 'row-reverse' }]}
           activeOpacity={0.7}
           onPress={() => handlePress('logout')}
         >
@@ -114,10 +115,10 @@ export default function SettingsScreen() {
 
         {/* Watermark Logo */}
         <View style={styles.watermarkWrapper}>
-          <View style={styles.logoContainer}>
-            <View style={[styles.logoLayer, { backgroundColor: colors.primary, top: 0 }]} />
-            <View style={[styles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
-            <View style={[styles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
+          <View style={commonStyles.logoContainer}>
+            <View style={[commonStyles.logoLayer, { backgroundColor: colors.primary, top: 0 }]} />
+            <View style={[commonStyles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
+            <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
           </View>
           <Text style={[styles.watermarkText, { color: colors.primary }]}>Academic{'\n'}Booking</Text>
         </View>
@@ -131,35 +132,17 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingHorizontal: 20, paddingTop: 16 },
 
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  headerTitle: { fontSize: 22, fontWeight: '700' },
-  headerSubtitle: { fontSize: 12, marginBottom: 22, lineHeight: 18 },
+  headerRow: { marginBottom: 10 },
 
-  listCard: { borderWidth: 1, borderRadius: 18, marginBottom: 20 },
+  listCard: { marginBottom: 20 },
 
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-  },
+  row: { borderBottomWidth: 1 },
   rowLabel: { fontSize: 14.5, fontWeight: '600' },
 
-  logoutRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
+  logoutRow: { paddingVertical: 14 },
   logoutLabel: { fontSize: 14.5, fontWeight: '700' },
 
   watermarkWrapper: { alignItems: 'center', marginTop: 50, opacity: 0.18 },
-  logoContainer: { width: 90, height: 100, alignItems: 'center', position: 'relative', marginBottom: 10 },
-  logoLayer: { position: 'absolute', width: 80, height: 36, borderRadius: 6 },
   watermarkText: { fontSize: 22, fontWeight: '700', textAlign: 'center', lineHeight: 26 },
 });

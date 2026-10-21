@@ -5,6 +5,7 @@ import { AdminHeader } from '../../components/AdminHeader';
 import { AdminTabBar } from '../../components/AdminTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { appointments, initialUsers } from '../../services/adminMockData';
+import { commonStyles } from '../../theme/styles';
 
 export default function AdminHome() {
   const { colors, t, isRTL } = useAppSettings();
@@ -25,7 +26,7 @@ export default function AdminHome() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false}>
         <AdminHeader title={t('adminWelcome')} subtitle={t('adminSubtitle')} />
 
         <View style={[styles.grid, isRTL && { flexDirection: 'row-reverse' }]}>
@@ -81,7 +82,6 @@ export default function AdminHome() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { padding: 20 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 22 },
   statCard: { width: '48%', borderRadius: 16, padding: 14, gap: 4 },
   statNumber: { fontSize: 26, fontWeight: '700' },
