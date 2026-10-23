@@ -24,4 +24,15 @@ export const commonStyles = StyleSheet.create({
 
   logoContainer: { width: 90, height: 100, alignItems: 'center', position: 'relative', marginBottom: 10 },
   logoLayer: { position: 'absolute', width: 80, height: 36, borderRadius: 6 },
+
+  avatarWrapper: { alignItems: 'center', marginBottom: 24 },
+  avatarCircle: { width: 84, height: 84, borderRadius: 42, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  changePhotoButton: { borderWidth: 1, borderRadius: 20, paddingVertical: 6, paddingHorizontal: 16 },
+  changePhotoText: { fontSize: 12, fontWeight: '600' },
+  sectionTitle: { fontSize: 14, fontWeight: '700', marginBottom: 12, marginTop: 10 },
+  field: { marginBottom: 14 },
+  fieldLabel: { fontSize: 12, marginBottom: 6 },
+  fieldInput: { borderWidth: 1, borderRadius: 12, height: 48, paddingHorizontal: 14, fontSize: 14 },
+  saveButton: { height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
+  saveButtonText: { fontSize: 15, fontWeight: '700' },
 });

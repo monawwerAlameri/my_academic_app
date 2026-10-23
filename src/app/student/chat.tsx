@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { commonStyles } from '../../theme/styles';
 
 interface Conversation {
   id: string;
@@ -46,21 +47,15 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={[styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>{t('chatTitle')}</Text>
+      <ScrollView contentContainerStyle={commonStyles.scrollContentHeader} showsVerticalScrollIndicator={false}>
+        <View style={[commonStyles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
+          <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>{t('chatTitle')}</Text>
         </View>
 
-        <View
-          style={[
-            styles.searchWrapper,
-            { backgroundColor: colors.white },
-            isRTL && { flexDirection: 'row-reverse' },
-          ]}
-        >
+        <View style={[commonStyles.searchBox, { backgroundColor: colors.white, borderColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
           <Ionicons name="search" size={20} color={colors.primary} />
           <TextInput
-            style={[styles.searchInput, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
+            style={[commonStyles.searchInput, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
             placeholder={t('searchDoctor')}
             placeholderTextColor={colors.placeholder}
             value={search}
@@ -68,7 +63,7 @@ export default function ChatScreen() {
           />
         </View>
 
-        <View style={[styles.listCard, { borderColor: colors.border }]}>
+        <View style={[commonStyles.panel, { borderColor: colors.border }]}>
           {filtered.map((conversation, index) => (
             <TouchableOpacity
               key={conversation.id}
@@ -83,20 +78,18 @@ export default function ChatScreen() {
               <Ionicons name="person-circle-outline" size={40} color={colors.primary} />
 
               <View style={{ flex: 1 }}>
-                <Text
-                  style={[styles.chatName, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
-                >
+                <Text style={[commonStyles.name, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>
                   {conversation.name}
                 </Text>
                 <Text
-                  style={[styles.chatLastMessage, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}
+                  style={[styles.smallText, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}
                   numberOfLines={1}
                 >
                   {conversation.lastMessage}
                 </Text>
               </View>
 
-              <Text style={[styles.chatTime, { color: colors.textSecondary }]}>{conversation.time}</Text>
+              <Text style={[styles.smallText, { color: colors.textSecondary }]}>{conversation.time}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -110,30 +103,6 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingHorizontal: 20, paddingTop: 16 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  headerTitle: { fontSize: 26, fontWeight: '700' },
-
-  searchWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 30,
-    height: 52,
-    paddingHorizontal: 18,
-    gap: 10,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  searchInput: { flex: 1, fontSize: 14 },
-
-  listCard: { borderWidth: 1, borderRadius: 18, padding: 6 },
-
   chatRow: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12 },
-  chatName: { fontSize: 14.5, fontWeight: '700' },
-  chatLastMessage: { fontSize: 12, marginTop: 3 },
-  chatTime: { fontSize: 11 },
+  smallText: { fontSize: 12 },
 });

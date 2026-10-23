@@ -1,29 +1,30 @@
 import { Ionicons } from '@expo/vector-icons';
 import {
-    AudioModule,
-    RecordingPresets,
-    setAudioModeAsync,
-    useAudioPlayer,
-    useAudioPlayerStatus,
-    useAudioRecorder,
-    useAudioRecorderState,
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioPlayer,
+  useAudioPlayerStatus,
+  useAudioRecorder,
+  useAudioRecorderState,
 } from 'expo-audio';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { FacultyTabBar } from '../../../components/FacultyTabBar';
 import { useAppSettings } from '../../../context/AppSettingsContext';
+import { commonStyles } from '../../../theme/styles';
 
 interface Message {
   id: string;
@@ -78,20 +79,20 @@ function VoiceMessage({
   };
 
   return (
-    <View style={styles.voiceRow}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
       <TouchableOpacity onPress={togglePlay} activeOpacity={0.7} hitSlop={8}>
         <Ionicons name={status.playing ? 'pause-circle' : 'play-circle'} size={34} color={color} />
       </TouchableOpacity>
       <View style={{ flex: 1 }}>
-        <View style={[styles.voiceTrack, { backgroundColor: color, opacity: 0.3 }]} />
+        <View style={[styles.bar, { backgroundColor: color, opacity: 0.3 }]} />
         <View
           style={[
-            styles.voiceProgress,
-            { backgroundColor: color, width: (progress * 100 + '%') as any },
+            styles.bar,
+            { backgroundColor: color, position: 'absolute', left: 0, top: 0, width: (progress * 100 + '%') as any },
           ]}
         />
       </View>
-      <Text style={{ color: color, fontSize: 11 }}>
+      <Text style={[styles.smallText, { color }]}>
         {formatTime(status.playing ? status.currentTime : totalSeconds)}
       </Text>
     </View>
@@ -107,6 +108,8 @@ export default function FacultyChatConversationScreen() {
 
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder);
+
+  const reverse = isRTL && { flexDirection: 'row-reverse' as const };
 
   const handleSend = () => {
     if (draft.trim().length === 0) return;
@@ -170,102 +173,74 @@ export default function FacultyChatConversationScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={[styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
+        <View style={[commonStyles.headerRow, { paddingHorizontal: 20, paddingTop: 16 }, reverse]}>
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-            <Ionicons
-              name={isRTL ? 'chevron-forward' : 'chevron-back'}
-              size={26}
-              color={colors.primary}
-            />
+            <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={26} color={colors.primary} />
           </TouchableOpacity>
           <Ionicons name="person-circle-outline" size={32} color={colors.primary} />
-          <Text style={[styles.headerTitle, { color: colors.primary }]} numberOfLines={1}>
+          <Text style={[commonStyles.name, { flex: 1, color: colors.primary }]} numberOfLines={1}>
             {name || t('chat')}
           </Text>
 
-          <View style={{ flex: 1 }} />
-
-          <View style={[styles.callButtons, isRTL && { flexDirection: 'row-reverse' }]}>
-            <TouchableOpacity onPress={() => handleCall('video')} activeOpacity={0.7} hitSlop={8}>
-              <Ionicons name="videocam" size={24} color={colors.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleCall('voice')} activeOpacity={0.7} hitSlop={8}>
-              <Ionicons name="call" size={22} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={() => handleCall('video')} activeOpacity={0.7} hitSlop={8}>
+            <Ionicons name="videocam" size={24} color={colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleCall('voice')} activeOpacity={0.7} hitSlop={8}>
+            <Ionicons name="call" size={22} color={colors.primary} />
+          </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.messagesContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 10, gap: 14 }} showsVerticalScrollIndicator={false}>
           {messages.length === 0 ? (
-            <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 40 }}>
-              {t('startConversation')}
-            </Text>
+            <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('startConversation')}</Text>
           ) : (
-            messages.map((message) => (
-              <View
-                key={message.id}
-                style={[
-                  styles.messageBubbleWrapper,
-                  message.audioUri ? { width: '78%' } : null,
-                  message.from === 'me' ? styles.alignRight : styles.alignLeft,
-                ]}
-              >
+            messages.map((message) => {
+              const isMe = message.from === 'me';
+              return (
                 <View
-                  style={[
-                    styles.bubble,
-                    message.from === 'me'
-                      ? { backgroundColor: colors.primary, borderBottomRightRadius: 4 }
-                      : { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderBottomLeftRadius: 4 },
-                  ]}
+                  key={message.id}
+                  style={{ maxWidth: '78%', width: message.audioUri ? '78%' : undefined, alignSelf: isMe ? 'flex-end' : 'flex-start' }}
                 >
-                  {message.audioUri ? (
-                    <VoiceMessage
-                      uri={message.audioUri}
-                      durationMs={message.durationMs}
-                      isMe={message.from === 'me'}
-                      colors={colors}
-                    />
-                  ) : (
-                    <Text style={[styles.bubbleText, { color: message.from === 'me' ? colors.white : colors.primary }]}>
-                      {message.text}
-                    </Text>
-                  )}
+                  <View
+                    style={[
+                      styles.bubble,
+                      isMe
+                        ? { backgroundColor: colors.primary, borderBottomRightRadius: 4 }
+                        : { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderBottomLeftRadius: 4 },
+                    ]}
+                  >
+                    {message.audioUri ? (
+                      <VoiceMessage uri={message.audioUri} durationMs={message.durationMs} isMe={isMe} colors={colors} />
+                    ) : (
+                      <Text style={[commonStyles.paragraph, { color: isMe ? colors.white : colors.primary }]}>{message.text}</Text>
+                    )}
+                  </View>
+                  <Text style={[styles.smallText, { color: colors.textSecondary, marginTop: 4 }]}>{message.time}</Text>
                 </View>
-                <Text style={[styles.messageTime, { color: colors.textSecondary }]}>{message.time}</Text>
-              </View>
-            ))
+              );
+            })
           )}
         </ScrollView>
 
         {isRecording ? (
-          <View style={[styles.inputRow, isRTL && { flexDirection: 'row-reverse' }]}>
+          <View style={[styles.inputRow, reverse]}>
             <TouchableOpacity onPress={() => stopRecording(false)} activeOpacity={0.7} hitSlop={8}>
-              <Ionicons name="trash-outline" size={26} color="#D32F2F" />
+              <Ionicons name="trash-outline" size={26} color={colors.danger} />
             </TouchableOpacity>
 
-            <View
-              style={[
-                styles.recordingBar,
-                { backgroundColor: colors.white, borderColor: colors.border },
-                isRTL && { flexDirection: 'row-reverse' },
-              ]}
-            >
-              <View style={styles.recordingDot} />
-              <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '600' }}>
+            <View style={[styles.input, { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.white, borderColor: colors.border }, reverse]}>
+              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.danger }} />
+              <Text style={[commonStyles.chipText, { color: colors.primary }]}>
                 {formatTime(recorderState.durationMillis / 1000)}
               </Text>
             </View>
 
-            <TouchableOpacity
-              style={[styles.sendButton, { backgroundColor: colors.primary }]}
-              activeOpacity={0.7}
-              onPress={() => stopRecording(true)}
-            >
+            <TouchableOpacity style={[styles.sendButton, { backgroundColor: colors.primary }]} activeOpacity={0.7} onPress={() => stopRecording(true)}>
               <Ionicons name="send" size={18} color={colors.white} />
             </TouchableOpacity>
           </View>
         ) : (
-          <View style={[styles.inputRow, isRTL && { flexDirection: 'row-reverse' }]}>
+          <View style={[styles.inputRow, reverse]}>
             <TextInput
               style={[styles.input, { backgroundColor: colors.white, color: colors.primary, borderColor: colors.border, textAlign: isRTL ? 'right' : 'left' }]}
               placeholder={t('typeMessage')}
@@ -273,15 +248,13 @@ export default function FacultyChatConversationScreen() {
               value={draft}
               onChangeText={setDraft}
             />
-            {draft.trim().length > 0 ? (
-              <TouchableOpacity style={[styles.sendButton, { backgroundColor: colors.primary }]} activeOpacity={0.7} onPress={handleSend}>
-                <Ionicons name="send" size={18} color={colors.white} />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={[styles.sendButton, { backgroundColor: colors.primary }]} activeOpacity={0.7} onPress={startRecording}>
-                <Ionicons name="mic" size={20} color={colors.white} />
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              style={[styles.sendButton, { backgroundColor: colors.primary }]}
+              activeOpacity={0.7}
+              onPress={draft.trim().length > 0 ? handleSend : startRecording}
+            >
+              <Ionicons name={draft.trim().length > 0 ? 'send' : 'mic'} size={20} color={colors.white} />
+            </TouchableOpacity>
           </View>
         )}
 
@@ -294,29 +267,10 @@ export default function FacultyChatConversationScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 16, marginBottom: 10 },
-  headerTitle: { fontSize: 18, fontWeight: '700', flexShrink: 1 },
-  callButtons: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-
-  messagesContent: { paddingHorizontal: 20, paddingBottom: 10, gap: 14 },
-
-  messageBubbleWrapper: { maxWidth: '78%' },
-  alignLeft: { alignSelf: 'flex-start' },
-  alignRight: { alignSelf: 'flex-end' },
-
+  smallText: { fontSize: 11 },
+  bar: { height: 3, borderRadius: 2 },
   bubble: { borderRadius: 16, paddingVertical: 10, paddingHorizontal: 14 },
-  bubbleText: { fontSize: 13.5 },
-
-  messageTime: { fontSize: 10, marginTop: 4 },
-
-  voiceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  voiceTrack: { height: 3, borderRadius: 2 },
-  voiceProgress: { height: 3, borderRadius: 2, position: 'absolute', left: 0, top: 0 },
-
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 10 },
-  input: { flex: 1, borderRadius: 24, height: 46, paddingHorizontal: 16, fontSize: 13, borderWidth: 1 },
+  input: { flex: 1, borderRadius: 24, height: 46, paddingHorizontal: 16, borderWidth: 1 },
   sendButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-
-  recordingBar: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 24, height: 46, paddingHorizontal: 16, borderWidth: 1 },
-  recordingDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#D32F2F' },
 });

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { commonStyles } from '../../theme/styles';
 
 type Review = { id: string; name: string; anonymous: boolean; rating: number; comment: string; date: string; };
 type Doctor = { id: string; name: string; avgRating: number; reviewsCount: number; reviews: Review[]; };
@@ -47,6 +48,9 @@ export default function ReviewsScreen() {
   const [myComment, setMyComment] = useState('');
   const [postAnonymously, setPostAnonymously] = useState(false);
 
+  const align = { textAlign: isRTL ? 'right' : 'left' } as const;
+  const reverse = isRTL && { flexDirection: 'row-reverse' as const };
+
   const filteredDoctors = DOCTORS.filter((d) => d.name.toLowerCase().includes(search.toLowerCase()));
 
   const handleSubmitReview = () => {
@@ -58,13 +62,13 @@ export default function ReviewsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.pageTitle, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('reviewsTitle')}</Text>
+      <ScrollView contentContainerStyle={commonStyles.scrollContentHeader} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <Text style={[commonStyles.headerTitle, align, { color: colors.primary, marginBottom: 16 }]}>{t('reviewsTitle')}</Text>
 
-        <View style={[styles.searchWrapper, { backgroundColor: colors.white }, isRTL && { flexDirection: 'row-reverse' }]}>
+        <View style={[commonStyles.searchBox, { backgroundColor: colors.white, borderColor: colors.border }, reverse]}>
           <Ionicons name="search" size={20} color={colors.primary} />
           <TextInput
-            style={[styles.searchInput, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
+            style={[commonStyles.searchInput, align, { color: colors.primary }]}
             placeholder={t('searchDoctorReviews')}
             placeholderTextColor={colors.placeholder}
             value={search}
@@ -76,18 +80,17 @@ export default function ReviewsScreen() {
           filteredDoctors.map((doctor) => (
             <TouchableOpacity
               key={doctor.id}
-              style={[styles.doctorCard, { backgroundColor: colors.cardBackground }, isRTL && { flexDirection: 'row-reverse' }]}
+              style={[commonStyles.card, { alignItems: 'center', backgroundColor: colors.cardBackground, borderColor: colors.border }, reverse]}
               activeOpacity={0.7}
               onPress={() => setSelectedDoctor(doctor)}
             >
               <Ionicons name="person-circle-outline" size={30} color={colors.primary} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.doctorName, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{doctor.name}</Text>
-                <View style={[styles.ratingRow, isRTL && { flexDirection: 'row-reverse' }]}>
+                <Text style={[commonStyles.name, align, { color: colors.primary }]}>{doctor.name}</Text>
+                <View style={[styles.row, reverse]}>
                   <StarRow rating={Math.round(doctor.avgRating)} colors={colors} />
-                  <Text style={[styles.ratingText, { color: colors.textSecondary }]}>
-                    {doctor.avgRating} · {doctor.
-                    reviewsCount} {t('reviewsCountLabel')}
+                  <Text style={[styles.smallText, { color: colors.textSecondary }]}>
+                    {doctor.avgRating} · {doctor.reviewsCount} {t('reviewsCountLabel')}
                   </Text>
                 </View>
               </View>
@@ -96,19 +99,19 @@ export default function ReviewsScreen() {
           ))}
 
         {selectedDoctor && (
-          <View style={[styles.card, { borderColor: colors.border }]}>
-            <TouchableOpacity style={[styles.backRow, isRTL && { flexDirection: 'row-reverse' }]} activeOpacity={0.7} onPress={() => setSelectedDoctor(null)}>
+          <View style={[commonStyles.panel, { padding: 18, borderColor: colors.border }]}>
+            <TouchableOpacity style={[commonStyles.headerRow, reverse]} activeOpacity={0.7} onPress={() => setSelectedDoctor(null)}>
               <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={18} color={colors.primary} />
-              <Text style={[styles.backText, { color: colors.primary }]}>{t('backToSearch')}</Text>
+              <Text style={[commonStyles.chipText, { color: colors.primary }]}>{t('backToSearch')}</Text>
             </TouchableOpacity>
 
-            <View style={[styles.doctorHeaderRow, isRTL && { flexDirection: 'row-reverse' }]}>
-              <Ionicons name="person-circle-outline" size={44} color={colors.primary} style={isRTL ? { marginLeft: 10 } : { marginRight: 10 }} />
+            <View style={[commonStyles.headerRow, reverse]}>
+              <Ionicons name="person-circle-outline" size={44} color={colors.primary} />
               <View>
-                <Text style={[styles.doctorNameLarge, { color: colors.primary }]}>{selectedDoctor.name}</Text>
-                <View style={[styles.ratingRow, isRTL && { flexDirection: 'row-reverse' }]}>
+                <Text style={[commonStyles.name, { color: colors.primary }]}>{selectedDoctor.name}</Text>
+                <View style={[styles.row, reverse]}>
                   <StarRow rating={Math.round(selectedDoctor.avgRating)} colors={colors} />
-                  <Text style={[styles.ratingText, { color: colors.textSecondary }]}>
+                  <Text style={[styles.smallText, { color: colors.textSecondary }]}>
                     {selectedDoctor.avgRating} ({selectedDoctor.reviewsCount})
                   </Text>
                 </View>
@@ -118,27 +121,27 @@ export default function ReviewsScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             {selectedDoctor.reviews.length === 0 ? (
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('noReviewsYet')}</Text>
+              <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noReviewsYet')}</Text>
             ) : (
               selectedDoctor.reviews.map((review) => (
-                <View key={review.id} style={styles.reviewItem}>
-                  <View style={[styles.reviewHeaderRow, isRTL && { flexDirection: 'row-reverse' }]}>
-                    <Text style={[styles.reviewerName, { color: colors.primary }]}>{review.name}</Text>
-                    <Text style={[styles.reviewDate, { color: colors.textSecondary }]}>{review.date}</Text>
+                <View key={review.id} style={{ marginBottom: 14 }}>
+                  <View style={[styles.row, { justifyContent: 'space-between' }, reverse]}>
+                    <Text style={[commonStyles.name, { color: colors.primary }]}>{review.name}</Text>
+                    <Text style={[styles.smallText, { color: colors.textSecondary }]}>{review.date}</Text>
                   </View>
                   <StarRow rating={review.rating} size={12} colors={colors} />
-                  <Text style={[styles.reviewComment, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{review.comment}</Text>
+                  <Text style={[styles.smallText, align, { color: colors.textSecondary, marginTop: 6 }]}>{review.comment}</Text>
                 </View>
               ))
             )}
 
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-            <Text style={[styles.writeTitle, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('writeReview')}</Text>
+            <Text style={[commonStyles.name, align, { color: colors.primary, marginBottom: 10 }]}>{t('writeReview')}</Text>
             <StarRow rating={myRating} size={22} editable onChange={setMyRating} colors={colors} />
 
             <TextInput
-              style={[styles.reviewInput, { borderColor: colors.border, color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
+              style={[styles.reviewInput, align, { borderColor: colors.border, color: colors.primary }]}
               placeholder={t('shareExperience')}
               placeholderTextColor={colors.placeholder}
               value={myComment}
@@ -146,17 +149,18 @@ export default function ReviewsScreen() {
               multiline
             />
 
-            <View style={[styles.submitRow, isRTL && { flexDirection: 'row-reverse' }]}>
-              <TouchableOpacity style={[styles.anonRow, isRTL && { flexDirection: 'row-reverse' }]} activeOpacity={0.7} onPress={() => setPostAnonymously(!postAnonymously)}>
-                <View style={[styles.checkbox, { borderColor: colors.border }, postAnonymously && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-                  {postAnonymously && <Ionicons name="checkmark" size={14} color={colors.white} />}
-                </View>
-                <Text style={[styles.anonText, { color: colors.textSecondary }]}>{t('postAnonymously')}</Text>
+            <View style={[styles.row, { justifyContent: 'space-between', marginTop: 14 }, reverse]}>
+              <TouchableOpacity style={[styles.row, reverse]} activeOpacity={0.7} onPress={() => setPostAnonymously(!postAnonymously)}>
+                <Ionicons name={postAnonymously ? 'checkbox' : 'square-outline'} size={22} color={colors.primary} />
+                <Text style={[styles.smallText, { color: colors.textSecondary }]}>{t('postAnonymously')}</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.submitButton, { backgroundColor: colors.
-              primary }]} activeOpacity={0.8} onPress={handleSubmitReview}>
-                <Text style={[styles.submitText, { color: colors.white }]}>{t('submit')}</Text>
+              <TouchableOpacity
+                style={[commonStyles.chip, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                activeOpacity={0.8}
+                onPress={handleSubmitReview}
+              >
+                <Text style={[commonStyles.chipText, { color: colors.white }]}>{t('submit')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -171,32 +175,8 @@ export default function ReviewsScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 10 },
-  pageTitle: { fontSize: 24, fontWeight: '700', marginBottom: 16 },
-  searchWrapper: { flexDirection: 'row', alignItems: 'center', borderRadius: 30, height: 52, paddingHorizontal: 18, gap: 10, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
-  searchInput: { flex: 1, fontSize: 14 },
-  doctorCard: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 16, padding: 14, marginBottom: 12 },
-  doctorName: { fontSize: 15, fontWeight: '700' },
-  doctorNameLarge: { fontSize: 17, fontWeight: '700' },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  ratingText: { fontSize: 12 },
-  card: { borderWidth: 1, borderRadius: 20, padding: 18 },
-  backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 },
-  backText: { fontSize: 13, fontWeight: '600' },
-  doctorHeaderRow: { flexDirection: 'row', alignItems: 'center' },
+  smallText: { fontSize: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   divider: { height: 1, marginVertical: 14 },
-  emptyText: { fontSize: 13, fontStyle: 'italic' },
-  reviewItem: { marginBottom: 14 },
-  reviewHeaderRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  reviewerName: { fontSize: 13, fontWeight: '700' },
-  reviewDate: { fontSize: 11 },
-  reviewComment: { fontSize: 13, marginTop: 6 },
-  writeTitle: { fontSize: 15, fontWeight: '700', marginBottom: 10 },
-  reviewInput: { borderWidth: 1, borderRadius: 12, padding: 12, minHeight: 70, fontSize: 13, marginTop: 12, textAlignVertical: 'top' },
-  submitRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
-  anonRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  checkbox: { width: 18, height: 18, borderWidth: 1.5, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
-  anonText: { fontSize: 12 },
-  submitButton: { borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 },
-  submitText: { fontSize: 13, fontWeight: '700' },
+  reviewInput: { borderWidth: 1, borderRadius: 12, padding: 12, minHeight: 70, marginTop: 12, textAlignVertical: 'top' },
 });

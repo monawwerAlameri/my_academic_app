@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { FacultyTabBar } from '../../components/FacultyTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { commonStyles } from '../../theme/styles';
 
 interface Conversation {
   id: string;
@@ -44,23 +45,23 @@ export default function FacultyChatScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={[styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScrollView contentContainerStyle={commonStyles.scrollContentHeader} showsVerticalScrollIndicator={false}>
+        <View style={[commonStyles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
             <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={26} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>{t('chat')}</Text>
+          <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>{t('chat')}</Text>
         </View>
 
-        <Text style={[styles.sectionLabel, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[commonStyles.name, { color: colors.primary, textAlign: isRTL ? 'right' : 'left', marginBottom: 12 }]}>
           {t('conversationsLabel')}
         </Text>
 
-        <View style={[styles.searchWrapper, { backgroundColor: colors.white }, isRTL && { flexDirection: 'row-reverse' }]}>
+        <View style={[commonStyles.searchBox, { backgroundColor: colors.white, borderColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
           <Ionicons name="search" size={18} color={colors.primary} />
           <TextInput
-            style={[styles.searchInput, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
+            style={[commonStyles.searchInput, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
             placeholder={t('searchForStudent')}
             placeholderTextColor={colors.placeholder}
             value={search}
@@ -68,25 +69,23 @@ export default function FacultyChatScreen() {
           />
         </View>
 
-        <View style={[styles.listCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        <View style={[commonStyles.panel, { borderColor: colors.border }]}>
           {filteredList.map((conv, index) => (
             <TouchableOpacity
               key={conv.id}
               style={[
-                styles.convRow,
+                commonStyles.menuRow,
                 index < filteredList.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
                 isRTL && { flexDirection: 'row-reverse' },
               ]}
               activeOpacity={0.7}
               onPress={() => openChat(conv)}
             >
-              <View style={[styles.convAvatar, { backgroundColor: colors.primary }]}>
-                <Ionicons name="person" size={18} color={colors.white} />
-              </View>
-              <Text style={[styles.convName, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>
+              <Ionicons name="person-circle-outline" size={40} color={colors.primary} />
+              <Text style={[commonStyles.name, { flex: 1, color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>
                 {conv.name}
               </Text>
-              <Text style={[styles.convTime, { color: colors.textSecondary }]}>{conv.lastActive}</Text>
+              <Text style={[styles.smallText, { color: colors.textSecondary }]}>{conv.lastActive}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -100,28 +99,5 @@ export default function FacultyChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 18, paddingTop: 10 },
-
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
-  headerTitle: { fontSize: 22, fontWeight: '700' },
-
-  sectionLabel: { fontSize: 15, fontWeight: '600', marginBottom: 12 },
-
-  searchWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 30,
-    height: 46,
-    paddingHorizontal: 16,
-    gap: 10,
-    marginBottom: 16,
-  },
-  searchInput: { flex: 1, fontSize: 13 },
-
-  listCard: { borderWidth: 1, borderRadius: 18, padding: 4 },
-  convRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  convAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  convName: { flex: 1, fontSize: 14.5, fontWeight: '600' },
-  convTime: { fontSize: 11 },
+  smallText: { fontSize: 12 },
 });

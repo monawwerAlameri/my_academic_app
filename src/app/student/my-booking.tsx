@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { commonStyles } from '../../theme/styles';
 
 type TabKey = 'previous' | 'upcoming';
 
@@ -54,22 +55,22 @@ export default function MyBookingScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={[styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
+      <ScrollView contentContainerStyle={commonStyles.scrollContentHeader} showsVerticalScrollIndicator={false}>
+        <View style={[commonStyles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
             <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={26} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>{t('myBookingsTitle')}</Text>
+          <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>{t('myBookingsTitle')}</Text>
         </View>
 
-        <View style={[styles.tabsWrapper, { backgroundColor: colors.cardBackground }, isRTL && { flexDirection: 'row-reverse' }]}>
+        <View style={[commonStyles.chipsRow, isRTL && { flexDirection: 'row-reverse' }]}>
           <TabButton label={t('previous')} isActive={activeTab === 'previous'} onPress={() => setActiveTab('previous')} colors={colors} />
           <TabButton label={t('upcoming')} isActive={activeTab === 'upcoming'} onPress={() => setActiveTab('upcoming')} colors={colors} />
         </View>
 
-        <View style={[styles.listCard, { borderColor: colors.border }]}>
+        <View style={[commonStyles.panel, { borderColor: colors.border }]}>
           {filtered.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('noBookings')}</Text>
+            <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noBookings')}</Text>
           ) : (
             filtered.map((booking, index) => (
               <BookingRow
@@ -85,11 +86,11 @@ export default function MyBookingScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.newBookingButton, { backgroundColor: colors.primary }]}
+          style={[commonStyles.saveButton, { backgroundColor: colors.primary }]}
           activeOpacity={0.8}
           onPress={() => router.push('/student/booking-type')}
         >
-          <Text style={[styles.newBookingText, { color: colors.white }]}>{t('newBooking')}</Text>
+          <Text style={[commonStyles.saveButtonText, { color: colors.white }]}>{t('newBooking')}</Text>
         </TouchableOpacity>
 
         <View style={{ height: 90 }} />
@@ -103,40 +104,38 @@ export default function MyBookingScreen() {
 function TabButton({ label, isActive, onPress, colors }: any) {
   return (
     <TouchableOpacity
-      style={[styles.tabButton, isActive && { backgroundColor: colors.white }]}
+      style={[commonStyles.chip, { borderColor: colors.border, backgroundColor: isActive ? colors.white : colors.cardBackground }]}
       activeOpacity={0.8}
       onPress={onPress}
     >
-      <Text style={[styles.tabText, { color: isActive ? colors.primary : colors.textSecondary }]}>{label}</Text>
+      <Text style={[commonStyles.chipText, { color: isActive ? colors.primary : colors.textSecondary }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
 function BookingRow({ booking, isLast, colors, isRTL, onCancel }: any) {
+  const info = [
+    { icon: 'person-circle-outline', text: booking.doctor },
+    { icon: 'location-outline', text: booking.location },
+    { icon: 'time-outline', text: booking.datetime },
+  ];
+
   return (
-    <View style={[styles.bookingRow, !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
+    <View style={[commonStyles.menuRow, !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
       <View style={{ flex: 1 }}>
-        <Text style={[styles.bookingTitle, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{booking.title}</Text>
+        <Text style={[commonStyles.name, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{booking.title}</Text>
 
-        <View style={[styles.infoLine, isRTL && { flexDirection: 'row-reverse' }]}>
-          <Ionicons name="person-circle-outline" size={16} color={colors.primary} />
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>{booking.doctor}</Text>
-        </View>
-
-        <View style={[styles.infoLine, isRTL && { flexDirection: 'row-reverse' }]}>
-          <Ionicons name="location-outline" size={16} color={colors.primary} />
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>{booking.location}</Text>
-        </View>
-
-        <View style={[styles.infoLine, isRTL && { flexDirection: 'row-reverse' }]}>
-          <Ionicons name="time-outline" size={16} color={colors.primary} />
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>{booking.datetime}</Text>
-        </View>
+        {info.map((item) => (
+          <View key={item.icon} style={[styles.infoLine, isRTL && { flexDirection: 'row-reverse' }]}>
+            <Ionicons name={item.icon as any} size={16} color={colors.primary} />
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>{item.text}</Text>
+          </View>
+        ))}
       </View>
 
       {!booking.isPast && (
-        <TouchableOpacity style={[styles.cancelButton, { borderColor: colors.danger }]} activeOpacity={0.7} onPress={onCancel}>
-          <Ionicons name="close" size={16} color={colors.danger} />
+        <TouchableOpacity activeOpacity={0.7} onPress={onCancel}>
+          <Ionicons name="close" size={20} color={colors.danger} />
         </TouchableOpacity>
       )}
     </View>
@@ -144,24 +143,6 @@ function BookingRow({ booking, isLast, colors, isRTL, onCancel }: any) {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingHorizontal: 18, paddingTop: 10 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
-  headerTitle: { fontSize: 22, fontWeight: '700' },
-
-  tabsWrapper: { flexDirection: 'row', borderRadius: 12, padding: 4, marginBottom: 18 },
-  tabButton: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
-  tabText: { fontSize: 13, fontWeight: '600' },
-
-  listCard: { borderWidth: 1, borderRadius: 18, padding: 6, marginBottom: 22 },
-  emptyText: { textAlign: 'center', paddingVertical: 24 },
-
-  bookingRow: { flexDirection: 'row', padding: 14, gap: 10 },
-  bookingTitle: { fontSize: 13, fontWeight: '700', marginBottom: 8 },
-  infoLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  infoText: { fontSize: 11.5 },
-
-  cancelButton: { width: 26, height: 26, borderRadius: 6, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-
-  newBookingButton: { height: 58, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  newBookingText: { fontSize: 17, fontWeight: '700' },
+  infoLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  infoText: { fontSize: 12 },
 });
