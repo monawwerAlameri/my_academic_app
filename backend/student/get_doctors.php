@@ -6,11 +6,12 @@ $stmt = $conn->prepare("
     SELECT
         facultymember.faculty_id,
         facultymember.full_name,
+        facultymember.office_location,
         AVG(review.rating) AS avg_rating,
         COUNT(review.review_id) AS reviews_count
     FROM facultymember
     LEFT JOIN review ON review.faculty_id = facultymember.faculty_id
-    GROUP BY facultymember.faculty_id, facultymember.full_name
+    GROUP BY facultymember.faculty_id, facultymember.full_name, facultymember.office_location
     ORDER BY facultymember.full_name ASC
 ");
 $stmt->execute();
@@ -19,10 +20,11 @@ $result = $stmt->get_result();
 $doctors = [];
 while ($row = $result->fetch_assoc()) {
     $doctors[] = [
-        "faculty_id"    => $row['faculty_id'],
-        "full_name"     => $row['full_name'],
-        "avg_rating"    => $row['avg_rating'] === null ? null : round((float)$row['avg_rating'], 1),
-        "reviews_count" => (int)$row['reviews_count']
+        "faculty_id"      => $row['faculty_id'],
+        "full_name"       => $row['full_name'],
+        "office_location" => $row['office_location'],
+        "avg_rating"      => $row['avg_rating'] === null ? null : round((float)$row['avg_rating'], 1),
+        "reviews_count"   => (int)$row['reviews_count']
     ];
 }
 

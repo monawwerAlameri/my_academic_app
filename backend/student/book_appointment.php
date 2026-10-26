@@ -1,6 +1,12 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 header('Content-Type: application/json');
+// Waiting lists of appointment times that already started are removed
+$clean_now = date("Y-m-d H:i:s");
+$cleanStmt = $conn->prepare("DELETE FROM waitinglist WHERE requested_time <= ?");
+$cleanStmt->bind_param("s", $clean_now);
+$cleanStmt->execute();
+$cleanStmt->close();
 
 $data = json_decode(file_get_contents("php://input"), true);
 $student_id           = $data['student_id'] ?? '';
@@ -125,8 +131,8 @@ $date_text         = date("j M Y", $date_ts);
 $time_text         = date("g:i A", strtotime($appointment_time));
 $now               = date("Y-m-d H:i:s");
 $notification_type = "Booking Confirmation";
-$student_message   = "Your appointment with " . $faculty['full_name'] . " on " . $date_text . " at " . $time_text . " has been confirmed.";
-$doctor_message    = $student['full_name'] . " booked an appointment on " . $date_text . " at " . $time_text . ".";
+$student_message   = json_encode(["doctor" => $faculty['full_name'], "date" => $appointment_date, "time" => $appointment_time], JSON_UNESCAPED_UNICODE);
+$doctor_message    = json_encode(["student" => $student['full_name'], "date" => $appointment_date, "time" => $appointment_time], JSON_UNESCAPED_UNICODE);
 
 $conn->begin_transaction();
 

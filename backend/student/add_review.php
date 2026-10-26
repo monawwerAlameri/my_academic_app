@@ -1,6 +1,12 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 header('Content-Type: application/json');
+// Booked appointments whose end time has passed become Completed
+$complete_now = date("Y-m-d H:i:s");
+$completeStmt = $conn->prepare("UPDATE appointment SET status = 'Completed' WHERE status = 'Booked' AND CONCAT(appointment_date, ' ', appointment_end_time) <= ?");
+$completeStmt->bind_param("s", $complete_now);
+$completeStmt->execute();
+$completeStmt->close();
 
 $data = json_decode(file_get_contents("php://input"), true);
 $student_id   = $data['student_id'] ?? '';

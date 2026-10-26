@@ -1,6 +1,12 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 header('Content-Type: application/json');
+// Booked appointments whose end time has passed become Completed
+$complete_now = date("Y-m-d H:i:s");
+$completeStmt = $conn->prepare("UPDATE appointment SET status = 'Completed' WHERE status = 'Booked' AND CONCAT(appointment_date, ' ', appointment_end_time) <= ?");
+$completeStmt->bind_param("s", $complete_now);
+$completeStmt->execute();
+$completeStmt->close();
 
 $data = json_decode(file_get_contents("php://input"), true);
 $student_id     = $data['student_id'] ?? '';
@@ -46,14 +52,21 @@ if ($appointment['status'] != 'Booked') {
     $conn->close();
     exit;
 }
+// Cancellation is closed in the last 30 minutes before the appointment (and after it starts)
+$cancel_deadline = strtotime($appointment['appointment_date'] . ' ' . $appointment['appointment_time']) - (30 * 60);
+if (time() > $cancel_deadline) {
+    echo json_encode(["success" => false, "code" => "CANCEL_TOO_LATE"]);
+    $conn->close();
+    exit;
+}
 
 $faculty_id        = $appointment['faculty_id'];
 $date_text         = date("j M Y", strtotime($appointment['appointment_date']));
 $time_text         = date("g:i A", strtotime($appointment['appointment_time']));
 $now               = date("Y-m-d H:i:s");
 $notification_type = "Cancellation";
-$student_message   = "Your appointment with " . $appointment['doctor_name'] . " at " . $time_text . " has been cancelled.";
-$doctor_message    = $appointment['student_name'] . " cancelled their appointment at " . $time_text . ".";
+$student_message   = json_encode(["doctor" => $appointment['doctor_name'], "date" => $appointment['appointment_date'], "time" => $appointment['appointment_time'], "by" => "student"], JSON_UNESCAPED_UNICODE);
+$doctor_message    = json_encode(["student" => $appointment['student_name'], "date" => $appointment['appointment_date'], "time" => $appointment['appointment_time'], "by" => "student"], JSON_UNESCAPED_UNICODE);
 
 // The slot of this appointment, in the same format used by the waiting list
 $slot_start   = $appointment['appointment_date'] . ' ' . $appointment['appointment_time'];
@@ -165,8 +178,8 @@ try {
 
                 // Booking confirmation for her and for the faculty (same as a normal booking)
                 $confirm_type     = "Booking Confirmation";
-                $new_student_msg  = "Your appointment with " . $appointment['doctor_name'] . " on " . $date_text . " at " . $time_text . " has been confirmed.";
-                $new_doctor_msg   = $first['waiting_student_name'] . " booked an appointment on " . $date_text . " at " . $time_text . ".";
+                $new_student_msg  = json_encode(["doctor" => $appointment['doctor_name'], "date" => $appointment['appointment_date'], "time" => $appointment['appointment_time']], JSON_UNESCAPED_UNICODE);
+                $new_doctor_msg   = json_encode(["student" => $first['waiting_student_name'], "date" => $appointment['appointment_date'], "time" => $appointment['appointment_time']], JSON_UNESCAPED_UNICODE);
 
                 $confirmStmt = $conn->prepare("INSERT INTO notification (user_id, notification_type, message, notification_time, appointment_id) VALUES (?, ?, ?, ?, ?)");
 

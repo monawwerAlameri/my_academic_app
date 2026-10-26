@@ -9,7 +9,7 @@ if (empty($student_id)) {
     echo json_encode(["success" => false, "code" => "STUDENT_ID_REQUIRED"]);
     exit;
 }
-
+$now = date("Y-m-d H:i:s");
 $stmt = $conn->prepare("
     SELECT
         appointment.appointment_id,
@@ -25,13 +25,10 @@ $stmt = $conn->prepare("
     INNER JOIN facultymember ON appointment.faculty_id = facultymember.faculty_id
         WHERE appointment.student_id = ?
     AND appointment.status = 'Booked'
-    AND (
-        appointment.appointment_date > CURDATE()
-        OR (appointment.appointment_date = CURDATE() AND appointment.appointment_time >= CURTIME())
-    )
+        AND TIMESTAMP(appointment.appointment_date, appointment.appointment_end_time) > ?
     ORDER BY appointment.appointment_date ASC, appointment.appointment_time ASC
 ");
-$stmt->bind_param("s", $student_id);
+$stmt->bind_param("ss", $student_id, $now);
 $stmt->execute();
 $result = $stmt->get_result();
 

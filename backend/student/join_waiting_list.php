@@ -1,6 +1,12 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 header('Content-Type: application/json');
+// Waiting lists of appointment times that already started are removed
+$clean_now = date("Y-m-d H:i:s");
+$cleanStmt = $conn->prepare("DELETE FROM waitinglist WHERE requested_time <= ?");
+$cleanStmt->bind_param("s", $clean_now);
+$cleanStmt->execute();
+$cleanStmt->close();
 
 $data = json_decode(file_get_contents("php://input"), true);
 $student_id           = $data['student_id'] ?? '';
@@ -124,7 +130,7 @@ $date_text         = date("j M Y", $date_ts);
 $time_text         = date("g:i A", strtotime($appointment_time));
 $now               = date("Y-m-d H:i:s");
 $notification_type = "Waiting List";
-$student_message   = "Hi " . $student['full_name'] . ", you have been added to the waiting list for " . $faculty['full_name'] . " (" . $appointment_type . ") on " . $date_text . " at " . $time_text . ". You will be notified when a slot becomes available.";
+$student_message   = json_encode(["doctor" => $faculty['full_name'], "appointment_type" => $appointment_type, "date" => $appointment_date, "time" => $appointment_time], JSON_UNESCAPED_UNICODE);
 
 $conn->begin_transaction();
 
