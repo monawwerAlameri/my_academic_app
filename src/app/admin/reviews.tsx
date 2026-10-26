@@ -6,6 +6,7 @@ import { AdminHeader } from '../../components/AdminHeader';
 import { AdminTabBar } from '../../components/AdminTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { doctorRatings, doctorReviews } from '../../services/adminMockData';
+import { commonStyles } from '../../theme/styles';
 
 function Stars({ value, size, color }: { value: number; size: number; color: string }) {
   const filled = Math.round(value);
@@ -37,7 +38,7 @@ export default function AdminReviews() {
     // ---------- قائمة الدكاترة ----------
     const emptyMessage =
       doctors.length === 0 ? (
-        <Text style={[styles.empty, { color: colors.textSecondary }]}>{t('noDoctorsFound')}</Text>
+        <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noDoctorsFound')}</Text>
       ) : null;
 
     const doctorCards = doctors.map((d) => (
@@ -45,13 +46,13 @@ export default function AdminReviews() {
         key={d.id}
         activeOpacity={0.8}
         onPress={() => setSelectedId(d.id)}
-        style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border, flexDirection: rowDir }]}
+        style={[commonStyles.card, styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border, flexDirection: rowDir }]}
       >
         <View style={[styles.avatar, { backgroundColor: colors.pillBackground }]}>
           <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 16 }}>{d.name.replace('Dr. ', '').charAt(0)}</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.name, { color: colors.primary, textAlign: textAlign }]}>{d.name}</Text>
+          <Text style={[commonStyles.name, { color: colors.primary, textAlign: textAlign }]}>{d.name}</Text>
           <View style={[styles.starsRow, { flexDirection: rowDir }]}>
             <Stars value={d.rating} size={14} color={colors.accent} />
             <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>{d.rating.toFixed(1)}</Text>
@@ -66,10 +67,10 @@ export default function AdminReviews() {
 
     content = (
       <View>
-        <View style={[styles.searchBox, { borderColor: colors.border, backgroundColor: colors.cardBackground, flexDirection: rowDir }]}>
+        <View style={[commonStyles.searchBox, { borderColor: colors.border, backgroundColor: colors.cardBackground, flexDirection: rowDir }]}>
           <Ionicons name="search" size={20} color={colors.primary} />
           <TextInput
-            style={[styles.searchInput, { color: colors.primary, textAlign: textAlign }]}
+            style={[commonStyles.searchInput, { color: colors.primary, textAlign: textAlign }]}
             placeholder={t('searchDoctorReviews')}
             placeholderTextColor={colors.placeholder}
             value={query}
@@ -88,14 +89,15 @@ export default function AdminReviews() {
 
     const emptyMessage =
       reviewsOfSelected.length === 0 ? (
-        <Text style={[styles.empty, { color: colors.textSecondary }]}>{t('noReviewsYet')}</Text>
+        <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noReviewsYet')}</Text>
       ) : null;
 
     const reviewCards = reviewsOfSelected.map((r) => (
-      <View key={r.id} style={[styles.reviewCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+      <View key={r.id} style={[styles.
+        reviewCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
         <View style={[styles.
         reviewTop, { flexDirection: rowDir }]}>
-          <Text style={[styles.name, { color: colors.primary }]}>{r.anonymous ? t('anonymousReviewer') : r.student}</Text>
+          <Text style={[commonStyles.name, { color: colors.primary }]}>{r.anonymous ? t('anonymousReviewer') : r.student}</Text>
           <Text style={{ color: colors.textSecondary, fontSize: 11 }}>{r.date}</Text>
         </View>
         <View style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginVertical: 6 }}>
@@ -135,7 +137,7 @@ export default function AdminReviews() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <AdminHeader title={t('reviewsTitle')} subtitle={t('reviewsAdminSubtitle')} />
         {content}
         <View style={{ height: 110 }} />
@@ -146,13 +148,8 @@ export default function AdminReviews() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { padding: 20 },
-  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, paddingHorizontal: 14, height: 50, marginBottom: 16 },
-  searchInput: { flex: 1, fontSize: 15, height: '100%' },
-  empty: { textAlign: 'center', marginTop: 40, fontSize: 14 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 16, padding: 12, marginBottom: 12 },
+  card: { alignItems: 'center' },
   avatar: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
-  name: { fontSize: 15, fontWeight: '700' },
   starsRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 14 },
   summary: { borderRadius: 18, padding: 18, marginBottom: 16 },

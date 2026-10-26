@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { commonStyles } from '../../theme/styles';
 
 interface NotificationItem { id: string; title: string; date: string; message: string; }
 
@@ -29,25 +30,26 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={[styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
+      <ScrollView contentContainerStyle={commonStyles.scrollContentHeader} showsVerticalScrollIndicator={false}>
+        <View style={[commonStyles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
             <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={26} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>{t('notificationTitle')}</Text>
+          <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>{t('notificationTitle')}</Text>
         </View>
 
         {notifications.length > 0 && (
-          <TouchableOpacity style={[styles.clearButton, { borderColor: colors.border, alignSelf: isRTL ? 'flex-start' : 'flex-end' }]} activeOpacity={0.7} onPress={clearAll}>
-            <Text style={[styles.clearButtonText, { color: colors.primary }]}>{t('clearAll')}</Text>
+          <TouchableOpacity
+            style={[commonStyles.chip, { borderColor: colors.border, alignSelf: isRTL ? 'flex-start' : 'flex-end', marginBottom: 16 }]}
+            activeOpacity={0.7}
+            onPress={clearAll}
+          >
+            <Text style={[commonStyles.chipText, { color: colors.primary }]}>{t('clearAll')}</Text>
           </TouchableOpacity>
         )}
 
         {notifications.length === 0 ? (
-          <View style={styles.emptyWrapper}>
-            <Ionicons name="notifications-off-outline" size={40} color={colors.placeholder} />
-            <Text style={[styles.emptyText, { color: colors.placeholder }]}>{t('noNotifications')}</Text>
-          </View>
+          <Text style={[commonStyles.empty, { color: colors.placeholder }]}>{t('noNotifications')}</Text>
         ) : (
           notifications.map((item) => <NotificationCard key={item.id} item={item} colors={colors} isRTL={isRTL} />)
         )}
@@ -61,37 +63,21 @@ export default function NotificationsScreen() {
 }
 
 function NotificationCard({ item, colors, isRTL }: any) {
+  const align = { textAlign: isRTL ? 'right' : 'left' } as const;
+
   return (
-    <View style={[styles.card, { backgroundColor: colors.white }, isRTL && { flexDirection: 'row-reverse' }]}>
-      <View style={[styles.iconWrapper, { backgroundColor: colors.cardBackground }]}>
-        <Ionicons name="notifications" size={20} color={colors.primary} />
-        <View style={[styles.dot, { backgroundColor: colors.danger }]} />
-      </View>
+    <View style={[commonStyles.card, { backgroundColor: colors.white, borderColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
+      <Ionicons name="notifications" size={22} color={colors.primary} />
 
       <View style={{ flex: 1 }}>
-        <View style={[styles.cardHeader, isRTL && { flexDirection: 'row-reverse' }]}>
-          <Text style={[styles.cardTitle, { color: colors.primary }]}>{item.title}</Text>
-          <Text style={[styles.cardDate, { color: colors.textSecondary }]}>{item.date}</Text>
-        </View>
-        <Text style={[styles.cardMessage, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{item.message}</Text>
+        <Text style={[commonStyles.name, align, { color: colors.primary }]}>{item.title}</Text>
+        <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>{item.date}</Text>
+        <Text style={[styles.smallText, align, { color: colors.textSecondary, marginTop: 6 }]}>{item.message}</Text>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingHorizontal: 18, paddingTop: 10 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
-  headerTitle: { fontSize: 22, fontWeight: '700' },
-  clearButton: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, marginBottom: 18 },
-  clearButtonText: { fontSize: 13, fontWeight: '700' },
-  card: { flexDirection: 'row', gap: 12, borderRadius: 16, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
-  iconWrapper: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  dot: { position: 'absolute', top: -2, right: -2, width: 9, height: 9, borderRadius: 5 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  cardTitle: { fontSize: 14.5, fontWeight: '700' },
-  cardDate: { fontSize: 10.5 },
-  cardMessage: { fontSize: 12, lineHeight: 18 },
-  emptyWrapper: { alignItems: 'center', paddingVertical: 60, gap: 10 },
-  emptyText: { fontSize: 14 },
+  smallText: { fontSize: 12 },
 });

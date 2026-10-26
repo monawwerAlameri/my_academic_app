@@ -6,6 +6,7 @@ import { AdminHeader } from '../../components/AdminHeader';
 import { AdminTabBar } from '../../components/AdminTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { AppointmentStatus, appointments } from '../../services/adminMockData';
+import { commonStyles } from '../../theme/styles';
 
 type Filter = 'all' | AppointmentStatus;
 const FILTERS: Filter[] = ['all', 'confirmed', 'pending', 'completed'];
@@ -24,33 +25,33 @@ export default function AdminAppointments() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false}>
         <AdminHeader title={t('appointmentsMonitoring')} />
 
-        <View style={[styles.chipsRow, isRTL && { flexDirection: 'row-reverse' }]}>
+        <View style={[commonStyles.chipsRow, isRTL && { flexDirection: 'row-reverse' }]}>
           {FILTERS.map((f) => {
             const active = filter === f;
             return (
               <TouchableOpacity
                 key={f}
-                style={[styles.chip, { borderColor: colors.border }, active && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                style={[commonStyles.chip, { borderColor: colors.border }, active && { backgroundColor: colors.primary, borderColor: colors.primary }]}
                 onPress={() => setFilter(f)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.chipText, { color: active ? colors.white : colors.textSecondary }]}>{t(f)}</Text>
+                <Text style={[commonStyles.chipText, { color: active ? colors.white : colors.textSecondary }]}>{t(f)}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
 
         {visible.length === 0 && (
-          <Text style={[styles.empty, { color: colors.textSecondary }]}>{t('noAppointments')}</Text>
+          <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noAppointments')}</Text>
         )}
 
         {visible.map((a) => {
           const st = statusStyle(a.status);
           return (
-            <View key={a.id} style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
+            <View key={a.id} style={[commonStyles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
               <View style={[styles.iconBox, { backgroundColor: colors.pillBackground }]}>
                 <Ionicons name={a.format === 'online' ? 'videocam-outline' : 'calendar-outline'} size={24} color={colors.primary} />
               </View>
@@ -80,14 +81,7 @@ export default function AdminAppointments() {
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
-  scrollContent: { padding: 20 },
-  chipsRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1 },
-  chipText: { fontSize: 13, fontWeight: '600' },
-  empty: { textAlign: 'center', marginTop: 40, fontSize: 14 },
-  card: { flexDirection: 'row', gap: 12, borderWidth: 1, borderRadius: 16, padding: 12, marginBottom: 12 },
   iconBox: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   name: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
   meta: { fontSize: 12.5, marginTop: 2 },

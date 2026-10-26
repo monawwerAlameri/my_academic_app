@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { AdminTabBar } from '../../components/AdminTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { commonStyles } from '../../theme/styles';
 
 export default function AdminAccountScreen() {
   const { colors, t, isRTL } = useAppSettings();
@@ -26,12 +27,12 @@ export default function AdminAccountScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <View style={[styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
+      <ScrollView contentContainerStyle={commonStyles.scrollContentHeader} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <View style={[commonStyles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
             <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={26} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>{t('editProfile')}</Text>
+          <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>{t('editProfile')}</Text>
         </View>
 
         <View style={styles.avatarWrapper}>
@@ -89,9 +90,6 @@ function Field({ label, value, onChangeText, keyboardType, secure, colors, isRTL
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingHorizontal: 20, paddingTop: 16 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
-  headerTitle: { fontSize: 22, fontWeight: '700' },
   avatarWrapper: { alignItems: 'center', marginBottom: 24 },
   avatarCircle: { width: 84, height: 84, borderRadius: 42, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   changePhotoButton: { borderWidth: 1, borderRadius: 20, paddingVertical: 6, paddingHorizontal: 16 },
