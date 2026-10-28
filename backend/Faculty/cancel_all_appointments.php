@@ -20,7 +20,7 @@ $sql = "SELECT appointment_id, student_id
         FROM appointment
         WHERE faculty_id = ?
         AND appointment_date = ?
-        AND status = 'Confirmed'";
+        AND status = 'Booked'";
 
 $stmt = $conn->prepare($sql);
 $stmt->bind_param(
@@ -45,7 +45,7 @@ $sql = "UPDATE appointment
         SET status = 'Cancelled'
         WHERE faculty_id = ?
         AND appointment_date = ?
-        AND status = 'Confirmed'";
+        AND status = 'Booked'";
 
 $stmt = $conn->prepare($sql);
 $stmt->bind_param(
