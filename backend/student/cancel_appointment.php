@@ -71,7 +71,7 @@ $doctor_message    = json_encode(["student" => $appointment['student_name'], "da
 // The slot of this appointment, in the same format used by the waiting list
 $slot_start   = $appointment['appointment_date'] . ' ' . $appointment['appointment_time'];
 $slot_end     = $appointment['appointment_date'] . ' ' . $appointment['appointment_end_time'];
-$slot_started = strtotime($slot_start) <= time();
+
 
 $conn->begin_transaction();
 
@@ -105,13 +105,7 @@ try {
     $notifStmt->execute();
     $notifStmt->close();
 
-    if ($slot_started) {
-        // The appointment time already started, so nobody can take this slot: clear its waiting list
-        $clearStmt = $conn->prepare("DELETE FROM waitinglist WHERE faculty_id = ? AND requested_time = ? AND requested_end_time = ?");
-        $clearStmt->bind_param("sss", $faculty_id, $slot_start, $slot_end);
-        $clearStmt->execute();
-        $clearStmt->close();
-    } else {
+   
         // First student in the waiting list of this slot
         $firstStmt = $conn->prepare("
             SELECT
@@ -191,7 +185,7 @@ try {
                 $confirmStmt->close();
             }
         }
-    }
+    
 
     $conn->commit();
     echo json_encode(["success" => true, "code" => "APPOINTMENT_CANCELLED"]);

@@ -41,6 +41,13 @@ if ($counts['completed_count'] == 0) {
     $conn->close();
     exit;
 }
+// A student can write at most 5 reviews for the same doctor
+$max_reviews_per_doctor = 5;
+if ($counts['reviews_count'] >= $max_reviews_per_doctor) {
+    echo json_encode(["success" => false, "code" => "REVIEW_MAX_REACHED"]);
+    $conn->close();
+    exit;
+}
 
 if ($counts['reviews_count'] >= $counts['completed_count']) {
     echo json_encode(["success" => false, "code" => "REVIEW_LIMIT_REACHED"]);
