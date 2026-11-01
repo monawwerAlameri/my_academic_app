@@ -1,18 +1,34 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { errorKey } from '../../services/errors';
+import { createBooking } from '../../services/student';
 import { commonStyles } from '../../theme/styles';
 
 export default function BookingConfirmScreen() {
   const { colors, t, isRTL } = useAppSettings();
-  const { type, subtype, doctor, location, datetime } = useLocalSearchParams<{
-    type: string; subtype: string; doctor: string; location: string; datetime: string;
+  const { type, subtype, doctorId, slotId, doctor, location, datetime } = useLocalSearchParams<{
+  type: string; subtype: string; doctorId: string; slotId: string; doctor: string; location: string; datetime: string;
   }>();
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleConfirm = () => router.push('/student/my-booking');
-
+ const handleConfirm = async () => {
+  if (submitting) return;
+  setSubmitting(true);
+  try {
+    await createBooking({ doctorId, slotId, type, subtype });
+    Alert.alert(t('bookingConfirmed'));
+    router.push('/student/my-booking');
+  } catch (e) {
+    Alert.alert(t('bookingFailed'), t(errorKey(e) as any));
+  } finally {
+    setSubmitting(false);
+  }
+};
+ 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={commonStyles.scrollContentHeader} showsVerticalScrollIndicator={false}>

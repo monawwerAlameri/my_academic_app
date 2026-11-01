@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  Alert,
   SafeAreaView,
   ScrollView,
   Text,
@@ -11,18 +12,52 @@ import {
 } from 'react-native';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { useFetch } from '../../hooks/useFetch';
+import { errorKey } from '../../services/errors';
+import { Profile, changePassword, getProfile, updateProfile } from '../../services/student';
 import { commonStyles } from '../../theme/styles';
 
 export default function AccountScreen() {
-  const { colors, t, isRTL } = useAppSettings();
-  const [fullName, setFullName] = useState('Nora Alshammari');
-  const [email, setEmail] = useState('nora@uoh.edu.sa');
-  const [phone, setPhone] = useState('0557863246');
+const { colors, t, isRTL } = useAppSettings();
+const [fullName, setFullName] = useState('');
+const [email, setEmail] = useState('');
+const [phone, setPhone] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleSave = () => router.back();
+  // تحميل البيانات من الباك
+  const { data: profile } = useFetch<Profile | null>(getProfile, null);
+
+useEffect(() => {
+  if (profile) {
+    setFullName(profile.fullName);
+    setEmail(profile.email);
+    setPhone(profile.phone);
+  }
+}, [profile]);
+
+const handleSave = async () => {
+  if (!profile) return;
+  if (newPassword && !currentPassword) {
+    Alert.alert(t('error'), t('err_ALL_FIELDS_REQUIRED'));
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    Alert.alert(t('error'), t('passwordMismatch'));
+    return;
+  }
+  try {
+    await updateProfile({ fullName, email, phone });
+    if (newPassword) {
+      await changePassword({ currentPassword, newPassword });
+    }
+    Alert.alert(t('profileSaved'));
+    router.back();
+  } catch (e) {
+    Alert.alert(t('error'), t(errorKey(e) as any));
+  }
+};
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>

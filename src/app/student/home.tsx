@@ -25,7 +25,7 @@ import {
 } from '../../services/student';
 import { commonStyles } from '../../theme/styles';
 
-
+import { errorKey } from '../../services/errors';
 
 
 
@@ -42,28 +42,23 @@ const userName = profile?.fullName?.split(' ')[0] ?? '';
 const sessions = bookings.filter((b) => !b.isPast).slice(0, 2);
 const latestNotifications = notifications.slice(0, 1);
 
-  const cancelSession = (id: string) => {
-    Alert.alert(
-      'Cancel Appointment',
-      'Are you sure you want to cancel this appointment?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: async () => {
-  try {
-    await cancelBooking(id);
-    reloadBookings();
-  } catch {
-    Alert.alert('Error', 'Could not cancel the appointment');
-  }
-},
-        },
-      ]
-    );
-  };
-
+const cancelSession = (id: string) => {
+  Alert.alert(t('cancelBookingTitle'), t('cancelBookingMsg'), [
+    { text: t('no'), style: 'cancel' },
+    {
+      text: t('yesCancel'),
+      style: 'destructive',
+      onPress: async () => {
+        try {
+          await cancelBooking(id);
+          reloadBookings();
+        } catch (e) {
+          Alert.alert(t('error'), t(errorKey(e) as any));
+        }
+      },
+    },
+  ]);
+};
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
   const reverse = isRTL && { flexDirection: 'row-reverse' as const };
 
@@ -100,7 +95,7 @@ const latestNotifications = notifications.slice(0, 1);
   <ActivityIndicator style={{ marginVertical: 16 }} color={colors.primary} />
 ) : bookingsError ? (
   <TouchableOpacity activeOpacity={0.7} onPress={reloadBookings}>
-    <Text style={[commonStyles.empty, { color: colors.danger }]}>{bookingsError}</Text>
+    <Text style={[commonStyles.empty, { color: colors.danger }]}>{t('loadError')}</Text>
   </TouchableOpacity>
 ) : sessions.length === 0 ? (
   <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noBookings')}</Text>
@@ -121,7 +116,7 @@ const latestNotifications = notifications.slice(0, 1);
   ))
 )}
           <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/student/my-booking')}>
-            <Text style={[commonStyles.name, { color: colors.primary, textAlign: 'center' }]}>View All</Text>
+            <Text style={[commonStyles.name, { color: colors.primary, textAlign: 'center' }]}>{t('viewAll')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -132,7 +127,7 @@ const latestNotifications = notifications.slice(0, 1);
   <ActivityIndicator style={{ marginVertical: 16 }} color={colors.primary} />
 ) : notificationsError ? (
   <TouchableOpacity activeOpacity={0.7} onPress={reloadNotifications}>
-    <Text style={[commonStyles.empty, { color: colors.danger }]}>{notificationsError}</Text>
+    <Text style={[commonStyles.empty, { color: colors.danger }]}>{t('loadError')}</Text>
   </TouchableOpacity>
 ) : latestNotifications.length === 0 ? (
   <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noNotifications')}</Text>
@@ -144,7 +139,7 @@ const latestNotifications = notifications.slice(0, 1);
       <Text style={[styles.smallText, align, { color: colors.textSecondary, marginTop: 6 }]}>{item.message}</Text>
 
       <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/student/notifications')}>
-        <Text style={[commonStyles.name, { color: colors.primary, textAlign: 'center', marginTop: 10 }]}>view all</Text>
+        <Text style={[commonStyles.name, { color: colors.primary, textAlign: 'center', marginTop: 10 }]}>{t('viewAllSmall')}</Text>
       </TouchableOpacity>
     </View>
   ))

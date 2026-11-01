@@ -8,7 +8,8 @@ export interface Message { id: string; from: 'me' | 'them'; text: string; time: 
 export interface Slot { id: string; time: string; status: 'available' | 'full'; }
 export interface DaySchedule { id: string; label: string; slots: Slot[]; }
 export interface Review { id: string; name: string; anonymous: boolean; rating: number; comment: string; date: string; }
-export interface Doctor { id: string; name: string; avgRating: number; reviewsCount: number; reviews: Review[]; }
+export interface Doctor { id: string; name: string; office?: string; avgRating: number; reviewsCount: number; }
+export interface Profile { fullName: string; email: string; phone: string; }
 
 // الحجوزات
 export const getBookings = () => request<Booking[]>('/student/bookings');
@@ -36,6 +37,8 @@ export const sendMessage = (chatId: string, text: string) =>
 
 // التقييمات
 export const getDoctors = () => request<Doctor[]>('/doctors');
+export const searchDoctors = (query: string) => request<Doctor[]>(`/doctors?search=${encodeURIComponent(query)}`);
+export const getDoctorReviews = (doctorId: string) => request<Review[]>(`/doctors/${doctorId}/reviews`);
 export const submitReview = (doctorId: string, data: { rating: number; comment: string; anonymous: boolean }) =>
   request<Review>(`/doctors/${doctorId}/reviews`, { method: 'POST', body: JSON.stringify(data) });
 
@@ -45,3 +48,5 @@ export const updateProfile = (data: { fullName: string; email: string; phone: st
   request<void>('/student/profile', { method: 'PUT', body: JSON.stringify(data) });
 export const changePassword = (data: { currentPassword: string; newPassword: string }) =>
   request<void>('/student/password', { method: 'PUT', body: JSON.stringify(data) });
+
+
