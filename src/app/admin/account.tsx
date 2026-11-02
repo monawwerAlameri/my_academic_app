@@ -16,9 +16,9 @@ import { commonStyles } from '../../theme/styles';
 
 export default function AdminAccountScreen() {
   const { colors, t, isRTL } = useAppSettings();
-  const [fullName, setFullName] = useState('Admin User');
-  const [email, setEmail] = useState('admin@university.edu');
-  const [phone, setPhone] = useState('0557863246');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -80,8 +80,7 @@ function Field({ label, value, onChangeText, keyboardType, secure, colors, isRTL
         style={[styles.fieldInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
         value={value}
         onChangeText={onChangeText}
-        placeholderTextColor={colors.
-        placeholder}
+        placeholderTextColor={colors.placeholder}
         keyboardType={keyboardType}
         secureTextEntry={secure}
       />
