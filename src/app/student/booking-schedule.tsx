@@ -33,12 +33,12 @@ const { data: doctors, loading: doctorsLoading, error: doctorsError, reload: rel
 
 const { data: schedule, loading: scheduleLoading, error: scheduleError, reload: reloadSchedule } =
   useFetch<DaySchedule[]>(
-    () => (doctor ? getDoctorSchedule(doctor.id) : Promise.resolve([])),
+    () => (doctor ? getDoctorSchedule(doctor.id, type) : Promise.resolve([])),
     [],
-    [doctor?.id]
+    [doctor?.id, type]
   );
 
-  const handleBook = (day: DaySchedule, slot: Slot) => {
+  const handleBook = (slot: Slot) => {
   if (!doctor) return;
   router.push({
     pathname: '/student/booking-confirm',
@@ -46,24 +46,27 @@ const { data: schedule, loading: scheduleLoading, error: scheduleError, reload: 
       type,
       subtype,
       doctorId: doctor.id,
-      slotId: slot.id,
       doctor: doctor.name,
       location: doctor.office ?? '',
-      datetime: day.label + ' - ' + slot.time,
+      date: slot.date,
+      start: slot.start,
+      end: slot.end,
+      datetime: `${slot.date} - ${slot.time}`,
     },
   });
 };
 
 const handleWaitlist = async (slot: Slot) => {
+  if (!doctor) return;
   try {
-    await joinWaitlist(slot.id);
+    await joinWaitlist({ doctorId: doctor.id, date: slot.date, start: slot.start, end: slot.end, type, subtype });
     Alert.alert(t('waitlistJoined'));
     reloadSchedule();
   } catch (e) {
     Alert.alert(t('error'), t(errorKey(e) as any));
   }
 };
-  
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={commonStyles.scrollContentHeader} showsVerticalScrollIndicator={false}>
@@ -136,7 +139,7 @@ const handleWaitlist = async (slot: Slot) => {
     >
       {schedule.map((day) => (
         <View key={day.id} style={[commonStyles.panel, styles.dayCard, { borderColor: colors.border }]}>
-          <Text style={[commonStyles.name, { color: colors.primary }]}>{day.label}</Text>
+          <Text style={[commonStyles.name, { color: colors.primary }]}>{t(day.dayKey as any)} - {day.date}</Text>
 
           {day.slots.map((slot, index) => (
             <View
@@ -159,7 +162,7 @@ const handleWaitlist = async (slot: Slot) => {
 
               <View style={{ flex: 1, alignItems: isRTL ? 'flex-start' : 'flex-end' }}>
                 {slot.status === 'available' ? (
-                  <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.primary }]} activeOpacity={0.8} onPress={() => handleBook(day, slot)}>
+                  <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.primary }]} activeOpacity={0.8} onPress={() => handleBook(slot)}>
                     <Ionicons name="checkmark-circle" size={14} color={colors.white} />
                     <Text style={[styles.smallText, { color: colors.white }]}>{t('book')}</Text>
                   </TouchableOpacity>

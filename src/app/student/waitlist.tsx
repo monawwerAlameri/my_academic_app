@@ -16,6 +16,8 @@ import { useFetch } from '../../hooks/useFetch';
 import { errorKey } from '../../services/errors';
 import { WaitingItem, getWaitlist, leaveWaitlist } from '../../services/student';
 import { commonStyles } from '../../theme/styles';
+import { appointmentLabel } from '../../utils/labels';
+
 
 const MAX_QUEUE = 10;
 
@@ -84,7 +86,7 @@ const removeItem = (id: string) => {
                   <View style={{ flex: 1 }}>
                     <Text style={[commonStyles.name, { color: colors.primary }]}>{item.doctor}</Text>
                     <Text style={[styles.smallText, { color: colors.textSecondary }]}>
-                      {item.office} · {item.day} · {item.time}
+                      {appointmentLabel(item.type, item.subtype, t)} · {item.time}
                     </Text>
                   </View>
 

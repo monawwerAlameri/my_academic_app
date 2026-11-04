@@ -17,6 +17,7 @@ import { useFetch } from '../../hooks/useFetch';
 import { errorKey } from '../../services/errors';
 import { Booking, cancelBooking as cancelBookingApi, getBookings } from '../../services/student';
 import { commonStyles } from '../../theme/styles';
+import { appointmentLabel } from '../../utils/labels';
 
 type TabKey = 'previous' | 'upcoming';
 
@@ -74,6 +75,7 @@ const cancelBooking = (id: string) => {
     <BookingRow
       key={booking.id}
       booking={booking}
+      title={appointmentLabel(booking.type, booking.subtype, t)}
       isLast={index === filtered.length - 1}
       colors={colors}
       isRTL={isRTL}
@@ -111,7 +113,7 @@ function TabButton({ label, isActive, onPress, colors }: any) {
   );
 }
 
-function BookingRow({ booking, isLast, colors, isRTL, onCancel }: any) {
+function BookingRow({ booking, title, isLast, colors, isRTL, onCancel }: any) {
   const info = [
     { icon: 'person-circle-outline', text: booking.doctor },
     { icon: 'location-outline', text: booking.location },
@@ -121,7 +123,7 @@ function BookingRow({ booking, isLast, colors, isRTL, onCancel }: any) {
   return (
     <View style={[commonStyles.menuRow, !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
       <View style={{ flex: 1 }}>
-        <Text style={[commonStyles.name, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{booking.title}</Text>
+        <Text style={[commonStyles.name, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
 
         {info.map((item) => (
           <View key={item.icon} style={[styles.infoLine, isRTL && { flexDirection: 'row-reverse' }]}>
@@ -131,7 +133,7 @@ function BookingRow({ booking, isLast, colors, isRTL, onCancel }: any) {
         ))}
       </View>
 
-      {!booking.isPast && (
+      {booking.canCancel && (
         <TouchableOpacity activeOpacity={0.7} onPress={onCancel}>
           <Ionicons name="close" size={20} color={colors.danger} />
         </TouchableOpacity>

@@ -1,20 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import {
-  Alert,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { DataState } from '../../components/DataState';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { useFetch } from '../../hooks/useFetch';
-import { errorKey } from '../../services/errors';
-import { NotificationItem, clearNotifications, getNotifications } from '../../services/student';
+import { NotificationItem, getNotifications, markNotificationsRead } from '../../services/student';
 import { commonStyles } from '../../theme/styles';
 
 
@@ -24,15 +23,7 @@ export default function NotificationsScreen() {
   const { colors, t, isRTL } = useAppSettings();
 
 const { data: notifications, loading, error, reload } = useFetch<NotificationItem[]>(getNotifications, []);
-
-const clearAll = async () => {
-  try {
-    await clearNotifications();
-    reload();
-  } catch (e) {
-    Alert.alert(t('error'), t(errorKey(e) as any));
-  }
-};
+useEffect(() => { markNotificationsRead().catch(() => {}); }, []);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -44,15 +35,7 @@ const clearAll = async () => {
           <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>{t('notificationTitle')}</Text>
         </View>
 
-        {notifications.length > 0 && (
-          <TouchableOpacity
-            style={[commonStyles.chip, { borderColor: colors.border, alignSelf: isRTL ? 'flex-start' : 'flex-end', marginBottom: 16 }]}
-            activeOpacity={0.7}
-            onPress={clearAll}
-          >
-            <Text style={[commonStyles.chipText, { color: colors.primary }]}>{t('clearAll')}</Text>
-          </TouchableOpacity>
-        )}
+       
 
       <DataState
   loading={loading}
@@ -62,7 +45,7 @@ const clearAll = async () => {
   onRetry={reload}
 >
   {notifications.map((item) => (
-    <NotificationCard key={item.id} item={item} colors={colors} isRTL={isRTL} />
+    <NotificationCard key={item.id} item={item} title={t(item.titleKey as any)} colors={colors} isRTL={isRTL} />
   ))}
 </DataState>
 
@@ -74,7 +57,7 @@ const clearAll = async () => {
   );
 }
 
-function NotificationCard({ item, colors, isRTL }: any) {
+function NotificationCard({ item, title, colors, isRTL }: any) {
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
 
   return (
@@ -82,7 +65,7 @@ function NotificationCard({ item, colors, isRTL }: any) {
       <Ionicons name="notifications" size={22} color={colors.primary} />
 
       <View style={{ flex: 1 }}>
-        <Text style={[commonStyles.name, align, { color: colors.primary }]}>{item.title}</Text>
+        <Text style={[commonStyles.name, align, { color: colors.primary }]}>{title}</Text>
         <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>{item.date}</Text>
         <Text style={[styles.smallText, align, { color: colors.textSecondary, marginTop: 6 }]}>{item.message}</Text>
       </View>

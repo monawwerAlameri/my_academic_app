@@ -59,6 +59,7 @@ const cancelSession = (id: string) => {
     },
   ]);
 };
+
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
   const reverse = isRTL && { flexDirection: 'row-reverse' as const };
 
@@ -108,10 +109,11 @@ const cancelSession = (id: string) => {
           {session.location} · {session.datetime}
         </Text>
       </View>
-
+      {session.canCancel && (
       <TouchableOpacity activeOpacity={0.7} onPress={() => cancelSession(session.id)}>
         <Ionicons name="close" size={20} color={colors.danger} />
       </TouchableOpacity>
+      )}
     </View>
   ))
 )}
@@ -134,7 +136,7 @@ const cancelSession = (id: string) => {
 ) : (
   latestNotifications.map((item) => (
     <View key={item.id} style={[styles.notificationCard, { backgroundColor: colors.cardBackground }]}>
-      <Text style={[commonStyles.name, align, { color: colors.primary }]}>{item.title}</Text>
+      <Text style={[commonStyles.name, align, { color: colors.primary }]}>{t(item.titleKey as any)}</Text>
       <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>{item.date}</Text>
       <Text style={[styles.smallText, align, { color: colors.textSecondary, marginTop: 6 }]}>{item.message}</Text>
 
