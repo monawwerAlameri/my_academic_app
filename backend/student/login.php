@@ -16,7 +16,7 @@ if (empty($student_id) || empty($password)) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT password, phone_number, full_name FROM student WHERE student_id = ?");
+$stmt = $conn->prepare("SELECT password, phone_number, full_name, account_status FROM student WHERE student_id = ?");
 $stmt->bind_param("s", $student_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -34,7 +34,11 @@ if (!password_verify($password, $student['password'])) {
     $conn->close();
     exit;
 }
-
+if ($student['account_status'] !== 'Active') {
+    echo json_encode(["success" => false, "code" => "ACCOUNT_NOT_ACTIVE"]);
+    $conn->close();
+    exit;
+}
 $phone_number = $student['phone_number'];
 
 $code = strval(random_int(100000, 999999));

@@ -14,9 +14,19 @@ if (empty($student_id) || empty($full_name) || empty($phone_number) || empty($em
     echo json_encode(["success" => false, "code" => "ALL_FIELDS_REQUIRED"]);
     exit;
 }
+// The university ID must contain digits only
+if (!preg_match('/^[0-9]+$/', $student_id)) {
+    echo json_encode(["success" => false, "code" => "INVALID_STUDENT_ID"]);
+    exit;
+}
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     echo json_encode(["success" => false, "code" => "INVALID_EMAIL"]);
+    exit;
+}
+// The university email must be: "s" + the university ID + "@uoh.edu.sa"
+if (strtolower($email) !== strtolower('s' . $student_id . '@uoh.edu.sa')) {
+    echo json_encode(["success" => false, "code" => "INVALID_UNIVERSITY_EMAIL"]);
     exit;
 }
 if (!preg_match('/^05[0-9]{8}$/', $phone_number)) {
@@ -50,6 +60,20 @@ if ($checkResult->num_rows > 0) {
     exit;
 }
 $checkStmt->close();
+
+// An email of a deleted account cannot be used to register again
+$bannedStmt = $conn->prepare("SELECT email FROM banned_emails WHERE email = ?");
+$bannedStmt->bind_param("s", $email);
+$bannedStmt->execute();
+$bannedResult = $bannedStmt->get_result();
+
+if ($bannedResult->num_rows > 0) {
+    echo json_encode(["success" => false, "code" => "EMAIL_BANNED"]);
+    $bannedStmt->close();
+    $conn->close();
+    exit;
+}
+$bannedStmt->close();
 
 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
