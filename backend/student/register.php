@@ -88,3 +88,11 @@ if ($insertStmt->execute()) {
 
 $insertStmt->close();
 $conn->close();
+$stmt = $conn->prepare("SELECT email FROM banned_emails WHERE email = ?");
+$stmt->bind_param('s', $email);
+$stmt->execute();
+$stmt->store_result();
+if ($stmt->num_rows > 0) {
+    // ارجعي رد برمز مثل EMAIL_BANNED وارفضي التسجيل
+}
+$stmt->close();
