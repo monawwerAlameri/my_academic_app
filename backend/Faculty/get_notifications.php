@@ -42,6 +42,5 @@ while ($row = $result->fetch_assoc()) {
 $response["success"] = true;
 $response["message"] = "Notifications retrieved successfully";
 $response["data"] = $notifications;
-
 echo json_encode($response);
 ?>
