@@ -100,7 +100,7 @@ export const addSlot = async (d: { day: DayKey; start: string; end: string; isOn
       day_of_week: d.day.charAt(0).toUpperCase() + d.day.slice(1),
       start_time: d.start,
       end_time: d.end,
-      appointment_type: d.isOnline ? 'Online' : 'Office Hours',
+      appointment_type: d.isOnline ? 'Online' : 'In-Person',
       location: d.isOnline ? 'Online' : d.location,
     }),
   });
@@ -136,14 +136,23 @@ export const getFacultyReviews = async (): Promise<FacultyReview[]> => {
 
 // ---------- الإشعارات ----------
 export interface FacultyNotification { id: string; type: string; message: string; time: string; }
-
+const readNotifMessage = (raw: string) => {
+  try {
+    const p = JSON.parse(raw);
+    if (p && typeof p === 'object') {
+      const when = [p.date, p.time ? fromApiTime(p.time) : ''].filter(Boolean).join(' ');
+      return [p.student ?? p.student_name ?? p.doctor, when, p.reason].filter(Boolean).join(' · ');
+    }
+  } catch {}
+  return raw ?? '';
+};
 export const getFacultyNotifications = async (): Promise<FacultyNotification[]> => {
   const fid = await getFacultyId();
   const res = await request<{ data: any[] }>(`/Faculty/get_notifications.php?faculty_id=${encodeURIComponent(fid)}`);
   return (res.data ?? []).map((n) => ({
     id: String(n.notification_id),
     type: n.notification_type,
-    message: n.message,
+    message: readNotifMessage(n.message),
     time: n.notification_time,
   }));
 };
@@ -172,4 +181,53 @@ export const updateFacultyProfile = async (p: FacultyProfile) =>
       phone_number: p.phone,
       office_location: p.office,
     }),
+  });
+
+  export const changeFacultyPassword = async (d: { currentPassword: string; newPassword: string }) =>
+  request<void>('/Faculty/change_password.php', {
+    method: 'POST',
+    body: JSON.stringify({
+      faculty_id: await getFacultyId(),
+      current_password: d.currentPassword,
+      new_password: d.newPassword,
+    }),
+  });
+
+  // ---------- المحادثات ----------
+export interface FacultyConversation { id: string; name: string; lastMessage: string; time: string; }
+export interface FacultyMessage { id: string; from: 'me' | 'them'; text: string; time: string; }
+
+const clockOf = (v: string) => {
+  const s = v ?? '';
+  return fromApiTime(s.includes(' ') ? s.split(' ')[1] : s);
+};
+
+export const getFacultyConversations = async (): Promise<FacultyConversation[]> => {
+  const fid = await getFacultyId();
+  const res = await request<{ data: any[] }>(`/Faculty/get_conversations.php?faculty_id=${encodeURIComponent(fid)}`);
+  return (res.data ?? []).map((c) => ({
+    id: String(c.student_id),
+    name: c.student_name ?? c.full_name ?? '',
+    lastMessage: c.last_message ?? '',
+    time: clockOf(c.last_message_time ?? c.last_active ?? ''),
+  }));
+};
+
+export const getFacultyMessages = async (studentId: string): Promise<FacultyMessage[]> => {
+  const fid = await getFacultyId();
+  const res = await request<{ data: any[] }>(
+    `/Faculty/get_messages.php?faculty_id=${encodeURIComponent(fid)}&student_id=${encodeURIComponent(studentId)}`
+  );
+  return (res.data ?? []).map((m) => ({
+    id: String(m.message_id),
+    from: String(m.sender_type ?? '').toLowerCase() === 'student' ? 'them' : 'me',
+    text: m.message_text || m.attachment_name || '',
+    time: clockOf(m.sent_at ?? ''),
+  }));
+};
+
+export const sendFacultyMessage = async (studentId: string, text: string) =>
+  request<void>('/Faculty/send_message.php', {
+    method: 'POST',
+    body: JSON.stringify({ faculty_id: await getFacultyId(), student_id: studentId, message_text: text }),
   });

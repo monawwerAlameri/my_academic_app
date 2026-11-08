@@ -17,7 +17,9 @@ import { useFetch } from '../../hooks/useFetch';
 import { errorKey } from '../../services/errors';
 import { Booking, cancelBooking as cancelBookingApi, getBookings } from '../../services/student';
 import { commonStyles } from '../../theme/styles';
+import { canChat, chatStarted, openBookingChat } from '../../utils/chat';
 import { appointmentLabel } from '../../utils/labels';
+
 
 type TabKey = 'previous' | 'upcoming';
 
@@ -76,6 +78,7 @@ const cancelBooking = (id: string) => {
       key={booking.id}
       booking={booking}
       title={appointmentLabel(booking.type, booking.subtype, t)}
+      onChat={() => openBookingChat(booking, t)}
       isLast={index === filtered.length - 1}
       colors={colors}
       isRTL={isRTL}
@@ -113,7 +116,7 @@ function TabButton({ label, isActive, onPress, colors }: any) {
   );
 }
 
-function BookingRow({ booking, title, isLast, colors, isRTL, onCancel }: any) {
+function BookingRow({ booking, title, isLast, colors, isRTL, onCancel, onChat }: any) {
   const info = [
     { icon: 'person-circle-outline', text: booking.doctor },
     { icon: 'location-outline', text: booking.location },
@@ -133,6 +136,11 @@ function BookingRow({ booking, title, isLast, colors, isRTL, onCancel }: any) {
         ))}
       </View>
 
+        {canChat(booking) && (
+  <TouchableOpacity activeOpacity={0.7} onPress={onChat} style={{ opacity: chatStarted(booking) ? 1 : 0.4 }}>
+    <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.primary} />
+  </TouchableOpacity>
+)}
       {booking.canCancel && (
         <TouchableOpacity activeOpacity={0.7} onPress={onCancel}>
           <Ionicons name="close" size={20} color={colors.danger} />
@@ -146,3 +154,4 @@ const styles = StyleSheet.create({
   infoLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   infoText: { fontSize: 12 },
 });
+

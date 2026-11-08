@@ -302,6 +302,8 @@ export const translations = {
     notifWaitlist: 'Waiting List',
     notifReminder: 'Appointment Reminder',
     notifStudentBooked: 'Appointment Booked',
+    chatNotStartedTitle: 'Chat not available yet',
+    chatNotStartedMsg: 'You can chat with the doctor once your online appointment starts',
   },
 
   ar: {
@@ -604,7 +606,10 @@ export const translations = {
     notifWaitlist: 'قائمة الانتظار',
     notifReminder: 'تذكير بموعد',
     notifStudentBooked: 'تم حجز موعد',
+    chatNotStartedTitle: 'المحادثة غير متاحة بعد',
+    chatNotStartedMsg: 'تفتح المحادثة مع الدكتور عند بدء موعدك عن بعد',
   },
 };
 
 export type TranslationKey = keyof typeof translations.en;
+
