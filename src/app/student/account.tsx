@@ -14,7 +14,7 @@ import { BottomTabBar } from '../../components/BottomTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { useFetch } from '../../hooks/useFetch';
 import { errorKey } from '../../services/errors';
-import { Profile, changePassword, getProfile, updateProfile } from '../../services/student';
+import { Profile, changePassword, getProfile } from '../../services/student';
 import { commonStyles } from '../../theme/styles';
 
 export default function AccountScreen() {
@@ -38,8 +38,11 @@ useEffect(() => {
 }, [profile]);
 
 const handleSave = async () => {
-  if (!profile) return;
-  if (newPassword && !currentPassword) {
+  if (!currentPassword && !newPassword && !confirmPassword) {
+    router.back();
+    return;
+  }
+  if (!currentPassword || !newPassword) {
     Alert.alert(t('error'), t('err_ALL_FIELDS_REQUIRED'));
     return;
   }
@@ -48,12 +51,11 @@ const handleSave = async () => {
     return;
   }
   try {
-    await updateProfile({ fullName, email, phone });
-    if (newPassword) {
-      await changePassword({ currentPassword, newPassword });
-    }
-    Alert.alert(t('profileSaved'));
-    router.back();
+    await changePassword({ currentPassword, newPassword });
+    Alert.alert(t('passwordChanged'));
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
   } catch (e) {
     Alert.alert(t('error'), t(errorKey(e) as any));
   }
@@ -82,9 +84,9 @@ const handleSave = async () => {
           {t('personalInfo')}
         </Text>
 
-        <Field label={t('fullName')} value={fullName} onChangeText={setFullName} colors={colors} isRTL={isRTL} />
-        <Field label={t('email')} value={email} onChangeText={setEmail} keyboardType="email-address" colors={colors} isRTL={isRTL} />
-        <Field label={t('phoneNumber')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" colors={colors} isRTL={isRTL} />
+        <Field label={t('fullName')} value={fullName} onChangeText={setFullName}editable={false} colors={colors} isRTL={isRTL} />
+        <Field label={t('email')} value={email} onChangeText={setEmail} keyboardType="email-address" editable={false} colors={colors} isRTL={isRTL} />
+        <Field label={t('phoneNumber')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={false} colors={colors} isRTL={isRTL} />
 
         <Text style={[commonStyles.sectionTitle, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>
           {t('changePassword')}
@@ -106,7 +108,7 @@ const handleSave = async () => {
   );
 }
 
-function Field({ label, value, onChangeText, keyboardType, secure, colors, isRTL }: any) {
+function Field({ label, value, onChangeText, keyboardType, secure, editable, colors, isRTL }: any) {
   return (
     <View style={commonStyles.field}>
       <Text style={[commonStyles.fieldLabel, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
@@ -117,6 +119,7 @@ function Field({ label, value, onChangeText, keyboardType, secure, colors, isRTL
         placeholderTextColor={colors.placeholder}
         keyboardType={keyboardType}
         secureTextEntry={secure}
+        editable={editable}
       />
     </View>
   );
