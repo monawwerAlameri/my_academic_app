@@ -11,121 +11,75 @@ import {
 } from 'react-native';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { commonStyles } from '../../theme/styles';
 
 export default function SettingsScreen() {
   const { colors, t, isDarkMode, toggleDarkMode, language, toggleLanguage, isRTL } =
     useAppSettings();
 
-  const handlePress = (key: string) => {
-    if (key === 'logout') {
-      router.push('/login');
-    } else if (key === 'account') {
-      router.push('/student/account');
-    } else if (key === 'privacy') {
-      router.push('/student/privacy-policy');
-    } else if (key === 'about') {
-      router.push('/student/about');
-    } else if (key === 'contact') {
-      router.push('/student/contact-us');
-    }
-  };
+  const reverse = isRTL && { flexDirection: 'row-reverse' as const };
+  const rowStyle = [commonStyles.menuRow, { borderBottomWidth: 1, borderBottomColor: colors.border }, reverse];
+  const labelStyle = [commonStyles.name, { flex: 1, color: colors.primary }];
+  const switchColors = { trackColor: { false: colors.border, true: colors.accent }, thumbColor: colors.white };
 
   const NAV_ROWS = [
-    { key: 'account', label: t('account'), icon: 'person-outline' as const },
-    { key: 'privacy', label: t('privacyPolicy'), icon: 'lock-closed-outline' as const },
-    { key: 'about', label: t('about'), icon: 'information-circle-outline' as const },
-    { key: 'contact', label: t('contactUs'), icon: 'call-outline' as const },
+    { route: '/student/account', label: t('account'), icon: 'person-outline' as const },
+    { route: '/student/privacy-policy', label: t('privacyPolicy'), icon: 'lock-closed-outline' as const },
+    { route: '/student/about', label: t('about'), icon: 'information-circle-outline' as const },
+    { route: '/student/contact-us', label: t('contactUs'), icon: 'call-outline' as const },
   ];
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, isRTL && { direction: 'rtl' }]}
+        contentContainerStyle={[commonStyles.scrollContentHeader, isRTL && { direction: 'rtl' }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={[styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
+        <View style={[commonStyles.headerRow, reverse]}>
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-            <Ionicons
-              name={isRTL ? 'chevron-forward' : 'chevron-back'}
-              size={26}
-              color={colors.primary}
-            />
+            <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={26} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>{t('settingsTitle')}</Text>
+          <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>{t('settingsTitle')}</Text>
         </View>
 
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
           {t('settingsSubtitle')}
         </Text>
 
-        {/* Navigation rows */}
-        <View style={[styles.listCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        <View style={[commonStyles.panel, { borderColor: colors.border, marginBottom: 20 }]}>
           {NAV_ROWS.map((row) => (
-            <TouchableOpacity
-              key={row.key}
-              style={[styles.row, { borderBottomColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}
-              activeOpacity={0.7}
-              onPress={() => handlePress(row.key)}
-            >
+            <TouchableOpacity key={row.route} style={rowStyle} activeOpacity={0.7} onPress={() => router.push(row.route as any)}>
               <Ionicons name={row.icon} size={20} color={colors.primary} />
-              <Text style={[styles.rowLabel, { color: colors.primary }]}>{row.label}</Text>
-              <Ionicons
-                name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                size={18}
-                color={colors.textSecondary}
-                style={isRTL ? { marginRight: 'auto' } : { marginLeft: 'auto' }}
-              />
+              <Text style={labelStyle}>{row.label}</Text>
+              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           ))}
 
-          {/* Dark mode toggle */}
-          <View style={[styles.row, { borderBottomColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
+          <View style={rowStyle}>
             <Ionicons name="moon-outline" size={20} color={colors.primary} />
-            <Text style={[styles.rowLabel, { color: colors.primary }]}>{t('darkMode')}</Text>
-            <View style={isRTL ? { marginRight: 'auto' } : { marginLeft: 'auto' }}>
-              <Switch
-                value={isDarkMode}
-                onValueChange={toggleDarkMode}
-                trackColor={{ false: colors.border, true: colors.accent }}
-                thumbColor={colors.white}
-              />
-            </View>
+            <Text style={labelStyle}>{t('darkMode')}</Text>
+            <Switch value={isDarkMode} onValueChange={toggleDarkMode} {...switchColors} />
           </View>
 
-          {/* Language toggle */}
-          <View style={[styles.row, isRTL && { flexDirection: 'row-reverse' }]}>
+          <View style={[commonStyles.menuRow, reverse]}>
             <Ionicons name="language-outline" size={20} color={colors.primary} />
-            <Text style={[styles.rowLabel, { color: colors.primary }]}>{t('arabic')}</Text>
-            <View style={isRTL ? { marginRight: 'auto' } : { marginLeft: 'auto' }}>
-              <Switch
-                value={language === 'ar'}
-                onValueChange={toggleLanguage}
-                trackColor={{ false: colors.border, true: colors.accent }}
-                thumbColor={colors.white}
-              />
-            </View>
+            <Text style={labelStyle}>{t('arabic')}</Text>
+            <Switch value={language === 'ar'} onValueChange={toggleLanguage} {...switchColors} />
           </View>
         </View>
 
-        {/* Logout */}
-        <TouchableOpacity
-          style={[styles.logoutRow, isRTL && { flexDirection: 'row-reverse' }]}
-          activeOpacity={0.7}
-          onPress={() => handlePress('logout')}
-        >
+        <TouchableOpacity style={[commonStyles.menuRow, reverse]} activeOpacity={0.7} onPress={() => router.push('/login')}>
           <Ionicons name="log-out-outline" size={20} color={colors.danger} />
-          <Text style={[styles.logoutLabel, { color: colors.danger }]}>{t('logout')}</Text>
+          <Text style={[commonStyles.name, { color: colors.danger }]}>{t('logout')}</Text>
         </TouchableOpacity>
 
-        {/* Watermark Logo */}
-        <View style={styles.watermarkWrapper}>
-          <View style={styles.logoContainer}>
-            <View style={[styles.logoLayer, { backgroundColor: colors.primary, top: 0 }]} />
-            <View style={[styles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
-            <View style={[styles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
+        <View style={styles.watermark}>
+          <View style={commonStyles.logoContainer}>
+            <View style={[commonStyles.logoLayer, { backgroundColor: colors.primary, top: 0 }]} />
+            <View style={[commonStyles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
+            <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
           </View>
-          <Text style={[styles.watermarkText, { color: colors.primary }]}>Academic{'\n'}Booking</Text>
+          <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Academic{'\n'}Booking</Text>
         </View>
 
         <View style={{ height: 90 }} />
@@ -137,35 +91,5 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingHorizontal: 20, paddingTop: 16 },
-
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  headerTitle: { fontSize: 22, fontWeight: '700' },
-  headerSubtitle: { fontSize: 12, marginBottom: 22, lineHeight: 18 },
-
-  listCard: { borderWidth: 1, borderRadius: 18, marginBottom: 20 },
-
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-  },
-  rowLabel: { fontSize: 14.5, fontWeight: '600' },
-
-  logoutRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  logoutLabel: { fontSize: 14.5, fontWeight: '700' },
-
-  watermarkWrapper: { alignItems: 'center', marginTop: 50, opacity: 0.18 },
-  logoContainer: { width: 90, height: 100, alignItems: 'center', position: 'relative', marginBottom: 10 },
-  logoLayer: { position: 'absolute', width: 80, height: 36, borderRadius: 6 },
-  watermarkText: { fontSize: 22, fontWeight: '700', textAlign: 'center', lineHeight: 26 },
+  watermark: { alignItems: 'center', marginTop: 50, opacity: 0.18 },
 });

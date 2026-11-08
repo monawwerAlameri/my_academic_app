@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { FacultyTabBar } from '../../components/FacultyTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { commonStyles } from '../../theme/styles';
 
 type DayKey = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday';
 
@@ -39,6 +40,37 @@ const initialSlots: Record<DayKey, Slot[]> = {
   thursday: [],
 };
 
+function ModalField({ label, value, onChangeText, placeholder, colors }: any) {
+  return (
+    <View style={commonStyles.field}>
+      <Text style={[commonStyles.fieldLabel, { color: colors.textSecondary }]}>{label}</Text>
+      <TextInput
+        style={[commonStyles.fieldInput, { borderColor: colors.border, color: colors.primary }]}
+        placeholder={placeholder}
+        placeholderTextColor={colors.placeholder}
+        value={value}
+        onChangeText={onChangeText}
+      />
+    </View>
+  );
+}
+
+function ModalButtons({ onCancel, onConfirm, confirmLabel, confirmColor, cancelLabel, colors }: any) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+      <TouchableOpacity style={[commonStyles.chip, { flex: 1, alignItems: 'center', borderColor: colors.border }]} onPress={onCancel}>
+        <Text style={[commonStyles.chipText, { color: colors.textSecondary }]}>{cancelLabel}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[commonStyles.chip, { flex: 1, alignItems: 'center', backgroundColor: confirmColor, borderColor: confirmColor }]}
+        onPress={onConfirm}
+      >
+        <Text style={[commonStyles.chipText, { color: colors.white }]}>{confirmLabel}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function FacultySchedule() {
   const { colors, t, isRTL } = useAppSettings();
   const [selectedDay, setSelectedDay] = useState<DayKey>('sunday');
@@ -60,6 +92,14 @@ export default function FacultySchedule() {
   const [closeReason, setCloseReason] = useState('');
 
   const slots = allSlots[selectedDay];
+  const align = { textAlign: isRTL ? 'right' : 'left' } as const;
+  const reverse = isRTL && { flexDirection: 'row-reverse' as const };
+
+  const chipStyle = (active: boolean) => [
+    commonStyles.chip,
+    { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : 'transparent' },
+  ];
+  const chipTextStyle = (active: boolean) => [commonStyles.chipText, { color: active ? colors.white : colors.textSecondary }];
 
   const handleToggleDay = (value: boolean) => {
     if (!value && slots.length > 0) {
@@ -108,39 +148,19 @@ export default function FacultySchedule() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.title, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('scheduleTitle')}
-        </Text>
+      <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false}>
+        <Text style={[commonStyles.headerTitle, align, { color: colors.primary, marginBottom: 16 }]}>{t('scheduleTitle')}</Text>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.daysScroll}
-          contentContainerStyle={[styles.daysRow, isRTL && { flexDirection: 'row-reverse' }]}
-        >
-          {days.map((day) => {
-            const active = selectedDay === day.key;
-            return (
-              <TouchableOpacity
-                key={day.key}
-                style={[
-                  styles.dayChip,
-                  { borderColor: colors.border },
-                  active && { backgroundColor: colors.primary, borderColor: colors.primary },
-                ]}
-                onPress={() => setSelectedDay(day.key)}
-              >
-                <Text style={[styles.dayChipText, { color: active ? colors.white : colors.textSecondary }]}>
-                  {t(day.shortKey)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        <View style={[commonStyles.chipsRow, reverse]}>
+          {days.map((day) => (
+            <TouchableOpacity key={day.key} style={chipStyle(selectedDay === day.key)} onPress={() => setSelectedDay(day.key)}>
+              <Text style={chipTextStyle(selectedDay === day.key)}>{t(day.shortKey)}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-        <View style={[styles.availableRow, isRTL && { flexDirection: 'row-reverse' }]}>
-          <Text style={[styles.availableText, { color: colors.primary }]}>
+        <View style={[commonStyles.headerRow, { justifyContent: 'space-between' }, reverse]}>
+          <Text style={[commonStyles.name, { color: colors.primary }]}>
             {t('availableOn')} {t(selectedDay)}
           </Text>
           <Switch
@@ -152,138 +172,87 @@ export default function FacultySchedule() {
         </View>
 
         {slots.length === 0 && (
-          <Text style={[styles.emptyText, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('noSlotsYet')}
-          </Text>
+          <Text style={[commonStyles.paragraph, align, { color: colors.textSecondary }]}>{t('noSlotsYet')}</Text>
         )}
 
         {slots.map((slot) => (
-          <View
-            key={slot.id}
-            style={[styles.slotRow, { borderColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}
-          >
+          <View key={slot.id} style={[commonStyles.card, { alignItems: 'center', borderColor: colors.border }, reverse]}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.slotTime, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>
-                {slot.time}
+              <Text style={[commonStyles.name, align, { color: colors.primary }]}>{slot.time}</Text>
+              <Text style={[styles.smallText, align, { color: slot.isOnline ? colors.success : colors.textSecondary }]}>
+                {slot.isOnline ? t('online') : `${t('office')} ${slot.location}`}
               </Text>
-              <View
-                style={[
-                  styles.badge,
-                  { backgroundColor: slot.isOnline ? colors.successLight : colors.pillBackground },
-                  isRTL ? { alignSelf: 'flex-end' } : { alignSelf: 'flex-start' },
-                ]}
-              >
-                <Text style={[styles.badgeText, { color: slot.isOnline ? colors.success : colors.primary }]}>
-                  {slot.isOnline ? t('online') : `${t('office')} ${slot.location}`}
-                </Text>
-              </View>
             </View>
-            <TouchableOpacity style={styles.iconButton} onPress={() => handleDeleteSlot(slot.id)}>
+            <TouchableOpacity onPress={() => handleDeleteSlot(slot.id)}>
               <Ionicons name="trash-outline" size={20} color={colors.danger} />
             </TouchableOpacity>
           </View>
         ))}
 
-        <TouchableOpacity style={[styles.addButton, { borderColor: colors.border }]} onPress={openAddModal}>
+        <TouchableOpacity
+          style={[commonStyles.card, { borderColor: colors.border, borderStyle: 'dashed', justifyContent: 'center' }]}
+          onPress={openAddModal}
+        >
           <Ionicons name="add" size={18} color={colors.textSecondary} />
-          <Text style={[styles.addButtonText, { color: colors.textSecondary }]}>{t('addTimeSlot')}</Text>
+          <Text style={[commonStyles.chipText, { color: colors.textSecondary }]}>{t('addTimeSlot')}</Text>
         </TouchableOpacity>
+
+        <View style={{ height: 90 }} />
       </ScrollView>
 
       {/* Add time slot modal */}
       <Modal visible={addModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>{t('addTimeSlotTitle')}</Text>
+        <View style={styles.overlay}>
+          <View style={[commonStyles.panel, { width: '100%', padding: 20, backgroundColor: colors.background, borderColor: colors.border }]}>
+            <Text style={[commonStyles.name, { color: colors.primary, marginBottom: 14 }]}>{t('addTimeSlotTitle')}</Text>
 
-            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('startTime')}</Text>
-            <TextInput
-              style={[styles.input, { borderColor: colors.border, color: colors.primary }]}
-              placeholder={t('timePlaceholder')}
-              placeholderTextColor={colors.placeholder}
-              value={newStart}
-              onChangeText={setNewStart}
-            />
+            <ModalField label={t('startTime')} value={newStart} onChangeText={setNewStart} placeholder={t('timePlaceholder')} colors={colors} />
+            <ModalField label={t('endTime')} value={newEnd} onChangeText={setNewEnd} placeholder={t('timePlaceholder')} colors={colors} />
 
-            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('endTime')}</Text>
-            <TextInput
-              style={[styles.input, { borderColor: colors.border, color: colors.primary }]}
-              placeholder={t('timePlaceholder')}
-              placeholderTextColor={colors.placeholder}
-              value={newEnd}
-              onChangeText={setNewEnd}
-            />
-
-            <View style={styles.typeRow}>
-              <TouchableOpacity
-                style={[styles.typeButton, { borderColor: colors.border }, !newIsOnline && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                onPress={() => setNewIsOnline(false)}
-              >
-                <Text style={{ color: !newIsOnline ? colors.white : colors.textSecondary, fontSize: 13, fontWeight: '600' }}>
-                  {t('office')}
-                </Text>
+            <View style={commonStyles.chipsRow}>
+              <TouchableOpacity style={[chipStyle(!newIsOnline), { flex: 1, alignItems: 'center' }]} onPress={() => setNewIsOnline(false)}>
+                <Text style={chipTextStyle(!newIsOnline)}>{t('office')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.typeButton, { borderColor: colors.border }, newIsOnline && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                onPress={() => setNewIsOnline(true)}
-              >
-                <Text style={{ color: newIsOnline ? colors.white : colors.textSecondary, fontSize: 13, fontWeight: '600' }}>
-                  {t('online')}
-                </Text>
+              <TouchableOpacity style={[chipStyle(newIsOnline), { flex: 1, alignItems: 'center' }]} onPress={() => setNewIsOnline(true)}>
+                <Text style={chipTextStyle(newIsOnline)}>{t('online')}</Text>
               </TouchableOpacity>
             </View>
 
             {!newIsOnline && (
-              <>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('location')}</Text>
-                <TextInput
-                  style={[styles.input, { borderColor: colors.border, color: colors.primary }]}
-                  placeholder={t('locationPlaceholder')}
-                  placeholderTextColor={colors.placeholder}
-                  value={newLocation}
-                  onChangeText={setNewLocation}
-                />
-              </>
+              <ModalField label={t('location')} value={newLocation} onChangeText={setNewLocation} placeholder={t('locationPlaceholder')} colors={colors} />
             )}
 
-            {!!addError && <Text style={{ color: colors.danger, fontSize: 12, marginBottom: 8 }}>{addError}</Text>}
+            {!!addError && <Text style={[styles.smallText, { color: colors.danger, marginBottom: 8 }]}>{addError}</Text>}
 
-            <View style={styles.modalButtonsRow}>
-              <TouchableOpacity style={[styles.modalButton, { borderColor: colors.border }]} onPress={() => setAddModalVisible(false)}>
-                <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{t('cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalButton, { backgroundColor: colors.primary, borderColor: colors.primary }]} onPress={handleSaveSlot}>
-                <Text style={{ color: colors.white, fontWeight: '600' }}>{t('save')}</Text>
-              </TouchableOpacity>
-            </View>
+            <ModalButtons
+              onCancel={() => setAddModalVisible(false)}
+              onConfirm={handleSaveSlot}
+              cancelLabel={t('cancel')}
+              confirmLabel={t('save')}
+              confirmColor={colors.primary}
+              colors={colors}
+            />
           </View>
         </View>
       </Modal>
 
       {/* Close day confirmation modal */}
       <Modal visible={closeModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.primary }]}>{t('closeDayTitle')}</Text>
-            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 14 }}>{t('closeDayWarning')}</Text>
+        <View style={styles.overlay}>
+          <View style={[commonStyles.panel, { width: '100%', padding: 20, backgroundColor: colors.background, borderColor: colors.border }]}>
+            <Text style={[commonStyles.name, { color: colors.primary, marginBottom: 8 }]}>{t('closeDayTitle')}</Text>
+            <Text style={[commonStyles.paragraph, { color: colors.textSecondary, marginBottom: 14 }]}>{t('closeDayWarning')}</Text>
 
-            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('reasonOptional')}</Text>
-            <TextInput
-              style={[styles.input, { borderColor: colors.border, color: colors.primary }]}
-              placeholder={t('reasonPlaceholder')}
-              placeholderTextColor={colors.placeholder}
-              value={closeReason}
-              onChangeText={setCloseReason}
+            <ModalField label={t('reasonOptional')} value={closeReason} onChangeText={setCloseReason} placeholder={t('reasonPlaceholder')} colors={colors} />
+
+            <ModalButtons
+              onCancel={() => setCloseModalVisible(false)}
+              onConfirm={confirmCloseDay}
+              cancelLabel={t('cancel')}
+              confirmLabel={t('confirm')}
+              confirmColor={colors.danger}
+              colors={colors}
             />
-
-            <View style={styles.modalButtonsRow}>
-              <TouchableOpacity style={[styles.modalButton, { borderColor: colors.border }]} onPress={() => setCloseModalVisible(false)}>
-                <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{t('cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalButton, { backgroundColor: colors.danger, borderColor: colors.danger }]} onPress={confirmCloseDay}>
-                <Text style={{ color: colors.white, fontWeight: '600' }}>{t('confirm')}</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </Modal>
@@ -294,29 +263,6 @@ export default function FacultySchedule() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { padding: 20, paddingBottom: 100 },
-  title: { fontSize: 20, fontWeight: '700', marginBottom: 18 },
-  daysScroll: { marginBottom: 18 },
-  daysRow: { flexDirection: 'row', gap: 8 },
-  dayChip: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10, borderWidth: 1 },
-  dayChipText: { fontSize: 13, fontWeight: '600' },
-  availableRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  availableText: { fontSize: 15, fontWeight: '600' },
-  emptyText: { fontSize: 13, marginBottom: 16 },
-  slotRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 10, gap: 8 },
-  slotTime: { fontSize: 14, fontWeight: '600' },
-  badge: { marginTop: 6, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
-  badgeText: { fontSize: 11, fontWeight: '600' },
-  iconButton: { padding: 4 },
-  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderStyle: 'dashed', borderRadius: 12, padding: 12, marginTop: 4 },
-  addButtonText: { fontSize: 13, fontWeight: '600' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  modalCard: { width: '100%', borderRadius: 16, padding: 20 },
-  modalTitle: { fontSize: 17, fontWeight: '700', marginBottom: 14 },
-  inputLabel: { fontSize: 12, fontWeight: '600', marginBottom: 6, marginTop: 8 },
-  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
-  typeRow: { flexDirection: 'row', gap: 8, marginTop: 12, marginBottom: 4 },
-  typeButton: { flex: 1, paddingVertical: 9, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
-  modalButtonsRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  modalButton: { flex: 1, paddingVertical: 12, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
+  smallText: { fontSize: 12 },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
 });

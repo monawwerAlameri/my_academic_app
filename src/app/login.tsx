@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useAppSettings } from '../context/AppSettingsContext';
+import { commonStyles } from '../theme/styles';
 
 // مستخدمين وهميين مؤقتاً لين الباك اند يخلص
 const mockUsers = [
@@ -25,6 +26,9 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  const align = { textAlign: isRTL ? 'right' : 'left' } as const;
+  const reverse = isRTL && { flexDirection: 'row-reverse' as const };
 
   const handleSignIn = () => {
     const found = mockUsers.find(
@@ -49,76 +53,57 @@ export default function LoginScreen() {
     }
   };
 
+  const fields: any[] = [
+    { label: t('username'), icon: 'person-outline', placeholder: t('enterUsername'), value: username, onChange: setUsername, autoCapitalize: 'none', autoCorrect: false },
+    { label: t('password'), icon: 'lock-closed-outline', placeholder: t('enterPassword'), value: password, onChange: setPassword, autoCapitalize: 'none', autoCorrect: false, secure: !showPassword, toggle: () => setShowPassword(!showPassword) },
+    { label: t('code'), icon: 'shield-checkmark-outline', placeholder: t('enterCode'), value: code, onChange: setCode, keyboardType: 'number-pad' },
+  ];
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <View style={styles.logoContainer}>
-          <View style={[styles.logoLayer, { backgroundColor: colors.primary, top: 0 }]} />
-          <View style={[styles.logoLayer, { backgroundColor: colors.accent, top: 40 }]} />
-          <View style={[styles.logoLayer, { backgroundColor: colors.placeholder, top: 80 }]} />
+      <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <View style={[commonStyles.logoContainer, { alignSelf: 'center' }]}>
+          <View style={[commonStyles.logoLayer, { backgroundColor: colors.primary, top: 0 }]} />
+          <View style={[commonStyles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
+          <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
         </View>
 
-        <Text style={[styles.title, { color: colors.primary }]}>Academic{'\n'}Booking</Text>
-        <Text style={[styles.subtitle, { color: colors.primary }]}>{t('signInSubtitle')}</Text>
+        <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Academic{'\n'}Booking</Text>
+        <Text style={[commonStyles.headerSubtitle, { color: colors.primary, textAlign: 'center', marginTop: 16 }]}>{t('signInSubtitle')}</Text>
 
-        <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('username')}</Text>
-          <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.background }, isRTL && { flexDirection: 'row-reverse' }]}>
-            <Ionicons name="person-outline" size={24} color={colors.primary} />
-            <TextInput
-              style={[styles.input, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
-              placeholder={t('enterUsername')}
-              placeholderTextColor={colors.placeholder}
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+        {fields.map((f) => (
+          <View key={f.label}>
+            <Text style={[commonStyles.name, align, { color: colors.primary, marginBottom: 6 }]}>{f.label}</Text>
+            <View style={[commonStyles.searchBox, { borderColor: colors.border, backgroundColor: colors.background }, reverse]}>
+              <Ionicons name={f.icon} size={22} color={colors.primary} />
+              <TextInput
+                style={[commonStyles.searchInput, align, { color: colors.primary }]}
+                placeholder={f.placeholder}
+                placeholderTextColor={colors.placeholder}
+                value={f.value}
+                onChangeText={f.onChange}
+                keyboardType={f.keyboardType}
+                autoCapitalize={f.autoCapitalize}
+                autoCorrect={f.autoCorrect}
+                secureTextEntry={f.secure}
+              />
+              {f.toggle && (
+                <TouchableOpacity onPress={f.toggle} activeOpacity={0.7}>
+                  <Ionicons name={f.secure ? 'eye-outline' : 'eye-off-outline'} size={22} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-        </View>
+        ))}
 
-        <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('password')}</Text>
-          <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.background }, isRTL && { flexDirection: 'row-reverse' }]}>
-            <Ionicons name="lock-closed-outline" size={24} color={colors.primary} />
-            <TextInput
-              style={[styles.input, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
-              placeholder={t('enterPassword')}
-              placeholderTextColor={colors.placeholder}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} activeOpacity={0.7}>
-              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={24} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('code')}</Text>
-          <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.background }, isRTL && { flexDirection: 'row-reverse' }]}>
-            <Ionicons name="shield-checkmark-outline" size={24} color={colors.primary} />
-            <TextInput
-              style={[styles.input, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
-              placeholder={t('enterCode')}
-              placeholderTextColor={colors.placeholder}
-              value={code}
-              onChangeText={setCode}
-              keyboardType="number-pad"
-            />
-          </View>
-        </View>
-        <TouchableOpacity style={[styles.signInButton, { backgroundColor: colors.primary }]} activeOpacity={0.8} onPress={handleSignIn}>
-          <Text style={[styles.signInText, { color: colors.white }]}>{t('signIn')}</Text>
+        <TouchableOpacity style={[commonStyles.saveButton, { backgroundColor: colors.primary }]} activeOpacity={0.8} onPress={handleSignIn}>
+          <Text style={[commonStyles.saveButtonText, { color: colors.white }]}>{t('signIn')}</Text>
         </TouchableOpacity>
 
-        <View style={styles.footerContainer}>
-          <Text style={[styles.footerText, { color: colors.primary }]}>{t('noAccount')}</Text>
+        <View style={styles.footer}>
+          <Text style={[commonStyles.paragraph, { color: colors.primary }]}>{t('noAccount')}</Text>
           <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/student/register')}>
-            <Text style={[styles.signUpText, { color: colors.accent }]}> {t('signUp')}</Text>
+            <Text style={[commonStyles.name, { color: colors.accent }]}> {t('signUp')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -127,18 +112,5 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { flexGrow: 1, paddingHorizontal: 32, paddingTop: 45, paddingBottom: 35, alignItems: 'center' },
-  logoContainer: { width: 110, height: 125, alignItems: 'center', position: 'relative', marginBottom: 15 },
-  logoLayer: { position: 'absolute', width: 100, height: 45, borderRadius: 7 },
-  title: { fontSize: 40, fontWeight: '700', textAlign: 'center', lineHeight: 46 },
-  subtitle: { fontSize: 17, textAlign: 'center', marginTop: 22, marginBottom: 30 },
-  field: { width: '100%', marginBottom: 18 },
-  label: { fontSize: 18, fontWeight: '700', marginBottom: 9 },
-  inputWrapper: { width: '100%', height: 64, flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 16, paddingHorizontal: 17 },
-  input: { flex: 1, height: '100%', marginLeft: 14, fontSize: 17 },
-  signInButton: { width: '100%', height: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
-  signInText: { fontSize: 20, fontWeight: '700' },
-  footerContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 24 },
-  footerText: { fontSize: 17 },
-  signUpText: { fontSize: 17, fontWeight: '600' },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 20 },
 });

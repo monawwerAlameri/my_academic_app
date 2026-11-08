@@ -5,6 +5,7 @@ import { AdminHeader } from '../../components/AdminHeader';
 import { AdminTabBar } from '../../components/AdminTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { appointments, doctorRatings } from '../../services/adminMockData';
+import { commonStyles } from '../../theme/styles';
 
 function Bar({ label, value, total, color, textColor, trackColor, isRTL }: {
   label: string; value: number; total: number; color: string; textColor: string; trackColor: string; isRTL: boolean;
@@ -34,7 +35,7 @@ export default function AdminReports() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false}>
         <AdminHeader title={t('reportsTitle')} />
 
         <View style={[styles.totalCard, { backgroundColor: colors.primary }, isRTL && { flexDirection: 'row-reverse' }]}>
@@ -68,7 +69,8 @@ export default function AdminReports() {
         <View style={card}>
           <Text style={title}>{t('topRatedDoctors')}</Text>
           {[...doctorRatings].sort((a, b) => b.rating - a.rating).map((d) => (
-            <View key={d.id} style={[styles.docRow, { borderBottomColor: colors.
+            <View key={d.
+              id} style={[styles.docRow, { borderBottomColor: colors.
                 border }, isRTL && { flexDirection: 'row-reverse' }]}>
               <Text style={[styles.docName, { color: colors.primary }]}>{d.name}</Text>
               <View style={[styles.ratingBox, isRTL && { flexDirection: 'row-reverse' }]}>
@@ -87,7 +89,6 @@ export default function AdminReports() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { padding: 20 },
   totalCard: { flexDirection: 'row', alignItems: 'center', gap: 16, borderRadius: 18, padding: 18, marginBottom: 14 },
   totalNumber: { fontSize: 30, fontWeight: '700' },
   card: { borderWidth: 1, borderRadius: 16, padding: 16, marginBottom: 14 },

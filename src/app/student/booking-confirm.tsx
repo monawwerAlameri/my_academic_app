@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { commonStyles } from '../../theme/styles';
 
 export default function BookingConfirmScreen() {
   const { colors, t, isRTL } = useAppSettings();
@@ -14,15 +15,15 @@ export default function BookingConfirmScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={[styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
+      <ScrollView contentContainerStyle={commonStyles.scrollContentHeader} showsVerticalScrollIndicator={false}>
+        <View style={[commonStyles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
             <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={26} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>{t('myBookingsTitle')}</Text>
+          <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>{t('myBookingsTitle')}</Text>
         </View>
 
-        <View style={[styles.card, { borderColor: colors.border }]}>
+        <View style={[commonStyles.panel, styles.card, { borderColor: colors.border }]}>
           <View style={[styles.typeBadge, { backgroundColor: colors.white, borderColor: colors.border }]}>
             <Text style={[styles.typeBadgeText, { color: colors.primary }]}>{type} Appointment-{subtype}</Text>
           </View>
@@ -42,8 +43,8 @@ export default function BookingConfirmScreen() {
             <Text style={[styles.infoText, { color: colors.primary }]}>{datetime}</Text>
           </View>
 
-          <TouchableOpacity style={[styles.confirmButton, { backgroundColor: colors.primary }]} activeOpacity={0.8} onPress={handleConfirm}>
-            <Text style={[styles.confirmButtonText, { color: colors.white }]}>{t('confirmBooking')}</Text>
+          <TouchableOpacity style={[commonStyles.saveButton, { backgroundColor: colors.primary }]} activeOpacity={0.8} onPress={handleConfirm}>
+            <Text style={[commonStyles.saveButtonText, { color: colors.white }]}>{t('confirmBooking')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -56,17 +57,9 @@ export default function BookingConfirmScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingHorizontal: 18, paddingTop: 10 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 },
-  headerTitle: { fontSize: 22, fontWeight: '700' },
-
-  card: { borderWidth: 1, borderRadius: 18, padding: 20 },
+  card: { padding: 20 },
   typeBadge: { borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14, marginBottom: 20 },
   typeBadgeText: { fontSize: 13, fontWeight: '700' },
-
   infoLine: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
   infoText: { fontSize: 14, fontWeight: '600' },
-
-  confirmButton: { height: 54, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
-  confirmButtonText: { fontSize: 15, fontWeight: '700' },
 });

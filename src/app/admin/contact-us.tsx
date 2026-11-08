@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AdminTabBar } from '../../components/AdminTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { commonStyles } from '../../theme/styles';
 
 export default function AdminContactUsScreen() {
   const { colors, t, isRTL } = useAppSettings();
@@ -15,24 +16,24 @@ export default function AdminContactUsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={[styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
+      <ScrollView contentContainerStyle={commonStyles.scrollContentHeader} showsVerticalScrollIndicator={false}>
+        <View style={[commonStyles.headerRow, styles.headerRow, isRTL && { flexDirection: 'row-reverse' }]}>
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
             <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={26} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.primary }]}>{t('contactUsTitle')}</Text>
+          <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>{t('contactUsTitle')}</Text>
         </View>
 
-        <Text style={[styles.subtitle, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
           {t('contactSubtitle')}
         </Text>
 
-        <View style={[styles.card, { borderColor: colors.border }]}>
+        <View style={[commonStyles.panel, { borderColor: colors.border }]}>
           {CONTACT_ROWS.map((row, index) => (
             <View
               key={row.label}
               style={[
-                styles.row,
+                commonStyles.menuRow,
                 index < CONTACT_ROWS.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
                 isRTL && { flexDirection: 'row-reverse' },
               ]}
@@ -55,12 +56,7 @@ export default function AdminContactUsScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingHorizontal: 20, paddingTop: 16 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
-  headerTitle: { fontSize: 22, fontWeight: '700' },
-  subtitle: { fontSize: 12, lineHeight: 18, marginBottom: 22 },
-  card: { borderWidth: 1, borderRadius: 18 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 16, paddingHorizontal: 16 },
+  headerRow: { marginBottom: 14 },
   rowLabel: { fontSize: 12, marginBottom: 3 },
   rowValue: { fontSize: 14, fontWeight: '600' },
 });
