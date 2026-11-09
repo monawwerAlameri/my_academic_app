@@ -6,6 +6,7 @@ export const BASE_URL = 'http://' + SERVER_IP + '/my_academic_app/backend/admin'
 
 export const ADMIN_ENDPOINTS = {
   login: BASE_URL + '/login.php',
+  verifyLogin: BASE_URL + '/verify_login.php',
   getUsers: BASE_URL + '/get_users.php',
   addDoctor: BASE_URL + '/add_doctor.php',
   deleteUser: BASE_URL + '/delete_user.php',
@@ -28,6 +29,7 @@ export type AccountStatus = 'Active' | 'Suspended';
 export type AppointmentStatusApi = 'Pending' | 'Confirmed' | 'Cancelled' | 'Completed';
 
 export interface AdminLoginData { adminId: string; fullName: string; email: string }
+export interface AdminLoginStartData { email: string; expiresInSeconds: number; devCode?: string }
 export interface ApiUser { userId: string; fullName: string; email: string; phoneNumber: string; role: string; accountStatus: string }
 export interface AddDoctorData { facultyId: string; fullName: string; department: string; email: string; temporaryPassword: string }
 export interface ApiAppointment {
@@ -69,8 +71,10 @@ function post<T>(url: string, body: object) {
 }
 
 export const adminApi = {
-  login: (email: string, password: string) =>
-    post<AdminLoginData>(ADMIN_ENDPOINTS.login, { email, password }),
+  login: (username: string, password: string) =>
+    post<AdminLoginStartData>(ADMIN_ENDPOINTS.login, { username, password }),
+  verifyLogin: (code: string) =>
+    post<AdminLoginData>(ADMIN_ENDPOINTS.verifyLogin, { code }),
   getUsers: () => request<ApiUser[]>(ADMIN_ENDPOINTS.getUsers),
   addDoctor: (fullName: string, email: string, department: string) =>
     post<AddDoctorData>(ADMIN_ENDPOINTS.addDoctor, { fullName, email, department }),
