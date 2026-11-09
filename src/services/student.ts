@@ -288,3 +288,16 @@ export const getProfile = async (): Promise<Profile> => {
 
 export const changePassword = (data: { currentPassword: string; newPassword: string }) =>
   callAsStudent('change_password', { current_password: data.currentPassword, new_password: data.newPassword });
+// ---------- التسجيل والدخول ----------
+export const studentLogin = (student_id: string, password: string) =>
+  call<{ phone_number: string; full_name: string; code: string }>('login', { student_id, password });
+
+export const studentOtpSend = (phone_number: string) =>
+  call<{ code: string }>('otp_send', { phone_number });
+
+export const studentVerify = (phone_number: string, code: string) =>
+  call('verify', { phone_number, code });
+
+export const studentRegister = (d: {
+  student_id: string; full_name: string; phone_number: string; email: string; password: string;
+}) => call('register', d);
