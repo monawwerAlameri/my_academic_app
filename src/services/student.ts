@@ -32,9 +32,11 @@ export interface Booking {
   type: string;
   subtype: string;
   canCancel: boolean;
+  doctorId: string;
+  startMs: number;
 }
 
-const toBooking = (a: any, isPast: boolean): Booking => {
+  const toBooking = (a: any, isPast: boolean, ids: Record<string, string>): Booking => {
   const start = new Date(`${a.appointment_date}T${a.appointment_time}`);
   return {
     id: String(a.appointment_id),
@@ -46,17 +48,23 @@ const toBooking = (a: any, isPast: boolean): Booking => {
     type: a.appointment_type ?? '',
     subtype: a.consultation_type ?? '',
     canCancel: !isPast && start.getTime() - Date.now() > 30 * 60 * 1000,
+    doctorId: a.faculty_id ? String(a.faculty_id) : ids[a.doctor_name] ?? '',
+    startMs: start.getTime(),
   };
 };
 
+
 export const getBookings = async (): Promise<Booking[]> => {
-  const [upcoming, previous] = await Promise.all([
+  const [upcoming, previous, doctors] = await Promise.all([
     callAsStudent<any[]>('get_appointments'),
     callAsStudent<any[]>('get_previous_appointments'),
+    getDoctors().catch(() => [] as Doctor[]),
   ]);
+  const ids: Record<string, string> = {};
+  doctors.forEach((d) => { ids[d.name] = d.id; });
   return [
-    ...(upcoming ?? []).map((a) => toBooking(a, false)),
-    ...(previous ?? []).map((a) => toBooking(a, true)),
+    ...(upcoming ?? []).map((a) => toBooking(a, false, ids)),
+    ...(previous ?? []).map((a) => toBooking(a, true, ids)),
   ];
 };
 

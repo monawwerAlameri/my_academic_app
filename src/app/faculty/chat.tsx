@@ -10,34 +10,25 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { DataState } from '../../components/DataState';
 import { FacultyTabBar } from '../../components/FacultyTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { useFetch } from '../../hooks/useFetch';
+import { FacultyConversation, getFacultyConversations } from '../../services/doctor';
 import { commonStyles } from '../../theme/styles';
 
-interface Conversation {
-  id: string;
-  name: string;
-  lastActive: string;
-}
 
-const CONVERSATIONS: Conversation[] = [
-  { id: '1', name: 'Sara salem', lastActive: '2:07 pm' },
-  { id: '2', name: 'Sultan Khalid', lastActive: '10:50 am' },
-  { id: '3', name: 'Salma Ayed', lastActive: '8:38 am' },
-  { id: '4', name: 'Nora Alotaibi', lastActive: 'Yeasterday' },
-  { id: '5', name: 'Laila saud', lastActive: 'Monday' },
-  { id: '6', name: 'Mohammed', lastActive: 'May 19' },
-];
 
 export default function FacultyChatScreen() {
   const { colors, t, isRTL } = useAppSettings();
   const [search, setSearch] = useState('');
+  const { data: conversations, loading, error, reload } = useFetch<FacultyConversation[]>(getFacultyConversations, []);
 
-  const filteredList = CONVERSATIONS.filter((c) =>
+  const filteredList = conversations.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const openChat = (conversation: Conversation) => {
+  const openChat = (conversation: FacultyConversation) => {
     router.push({
       pathname: '/faculty/chat/[id]',
       params: { id: conversation.id, name: conversation.name },
@@ -70,6 +61,14 @@ export default function FacultyChatScreen() {
         </View>
 
         <View style={[commonStyles.panel, { borderColor: colors.border }]}>
+          <DataState
+  loading={loading}
+  error={error}
+  empty={filteredList.length === 0}
+  emptyText={t('noConversations')}
+  onRetry={reload}
+>
+
           {filteredList.map((conv, index) => (
             <TouchableOpacity
               key={conv.id}
@@ -85,9 +84,10 @@ export default function FacultyChatScreen() {
               <Text style={[commonStyles.name, { flex: 1, color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>
                 {conv.name}
               </Text>
-              <Text style={[styles.smallText, { color: colors.textSecondary }]}>{conv.lastActive}</Text>
+              <Text style={[styles.smallText, { color: colors.textSecondary }]}>{conv.time}</Text>
             </TouchableOpacity>
           ))}
+          </DataState>
         </View>
 
         <View style={{ height: 90 }} />
@@ -101,3 +101,5 @@ export default function FacultyChatScreen() {
 const styles = StyleSheet.create({
   smallText: { fontSize: 12 },
 });
+
+

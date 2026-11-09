@@ -26,6 +26,7 @@ import {
 import { commonStyles } from '../../theme/styles';
 
 import { errorKey } from '../../services/errors';
+import { canChat, chatStarted, openBookingChat } from '../../utils/chat';
 
 
 
@@ -109,6 +110,13 @@ const cancelSession = (id: string) => {
           {session.location} · {session.datetime}
         </Text>
       </View>
+
+    {canChat(session) && (
+  <TouchableOpacity activeOpacity={0.7} onPress={() => openBookingChat(session, t)} style={{ opacity: chatStarted(session) ? 1 : 0.4 }}>
+    <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.primary} />
+  </TouchableOpacity>
+)}
+
       {session.canCancel && (
       <TouchableOpacity activeOpacity={0.7} onPress={() => cancelSession(session.id)}>
         <Ionicons name="close" size={20} color={colors.danger} />

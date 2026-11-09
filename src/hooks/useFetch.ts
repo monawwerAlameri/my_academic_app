@@ -7,13 +7,14 @@ export function useFetch<T>(fn: () => Promise<T>, initial: T, deps: any[] = []) 
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
-
-   try { setData(await fn()); setError(false); }
+    try { setData(await fn()); setError(false); }
     catch { if (!silent) setError(true); }
-    
     finally { setLoading(false); }
   }, deps);
 
   useEffect(() => { load(); }, [load]);
-  return { data, setData, loading, error, reload: () => load(), silentReload: () => load(true) };
+
+  const reload = useCallback(() => load(), [load]);
+  const silentReload = useCallback(() => load(true), [load]);
+  return { data, setData, loading, error, reload, silentReload };
 }
