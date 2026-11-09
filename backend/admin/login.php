@@ -20,7 +20,15 @@ const SMTP_USER = 'your-email@gmail.com';
 const SMTP_PASS = 'your-app-password';
 
 function sendAdminCode(string $toEmail, string $toName, string $code): bool {
-    require_once __DIR__ . '/../vendor/autoload.php'; // PHPMailer installed with Composer
+    // PHPMailer: Composer install (vendor/) or the manual copy (PHPMailer/src/)
+    $autoload = __DIR__ . '/../vendor/autoload.php';
+    if (file_exists($autoload)) {
+        require_once $autoload;
+    } else {
+        require_once __DIR__ . '/../PHPMailer/src/Exception.php';
+        require_once __DIR__ . '/../PHPMailer/src/PHPMailer.php';
+        require_once __DIR__ . '/../PHPMailer/src/SMTP.php';
+    }
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
@@ -30,6 +38,7 @@ function sendAdminCode(string $toEmail, string $toName, string $code): bool {
         $mail->Password = SMTP_PASS;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
+        $mail->CharSet = 'UTF-8';
         $mail->setFrom(SMTP_USER, 'Academic Booking');
         $mail->addAddress($toEmail, $toName);
         $mail->Subject = 'Your admin verification code';
@@ -37,28 +46,29 @@ function sendAdminCode(string $toEmail, string $toName, string $code): bool {
         $mail->send();
         return true;
     } catch (MailException $e) {
+        error_log('Admin OTP mail error: ' . $mail->ErrorInfo); // see C:\xampp\apache\logs\error.log
         return false;
     }
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
 
-$email = trim($input['email'] ?? '');
+$username = trim($input['username'] ?? ($input['email'] ?? ''));
 $password = $input['password'] ?? '';
 
-if ($email === '' || $password === '') {
-    echo json_encode(['success' => false, 'message' => 'Email and password are required', 'data' => null]);
+if ($username === '' || $password === '') {
+    echo json_encode(['success' => false, 'message' => 'Username and password are required', 'data' => null]);
     exit;
 }
 
-$stmt = $conn->prepare("SELECT admin_id, full_name, email, password FROM admin WHERE email = ?");
-$stmt->bind_param('s', $email);
+$stmt = $conn->prepare("SELECT admin_id, full_name, email, password FROM admin WHERE admin_id = ? OR email = ?");
+$stmt->bind_param('ss', $username, $username);
 $stmt->execute();
 $admin = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
 if (!$admin || !password_verify($password, $admin['password'])) {
-    echo json_encode(['success' => false, 'message' => 'Invalid email or password', 'data' => null]);
+    echo json_encode(['success' => false, 'message' => 'Invalid username or password', 'data' => null]);
     exit;
 }
 
