@@ -173,3 +173,18 @@ export const updateFacultyProfile = async (p: FacultyProfile) =>
       office_location: p.office,
     }),
   });
+
+  export const facultyRegister = (d: {
+  faculty_id: string; full_name: string; email: string;
+  password: string; phone_number: string; office_location: string;
+}) =>
+  request<void>('/Faculty/register.php', {
+    method: 'POST',
+    body: JSON.stringify(d),
+  });
+
+  export const facultyLogin = (faculty_id: string, password: string) =>
+  request<{ data: any }>('/Faculty/login.php', {
+    method: 'POST',
+    body: JSON.stringify({ faculty_id, password }),
+  });
