@@ -1,46 +1,41 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/mailer.php';
 header('Content-Type: application/json');
 
-// ==== دالة الإرسال (Mock الحين، تتبدل لاحقاً لـSMS حقيقي بدون ما نلمس باقي الملف) ====
-function sendSms($phone_number, $code) {
-    // Mock OTP: حالياً نرجع الكود مباشرة بدل إرساله SMS فعلي (للتطوير والاختبار فقط)
-    return ["mock" => true, "code" => $code];
-}
-// ====================================================================
+$data  = json_decode(file_get_contents("php://input"), true);
+$email = strtolower(trim($data['email'] ?? ''));
 
-$data = json_decode(file_get_contents("php://input"), true);
-$phone_number = $data['phone_number'] ?? '';
-
-if (empty($phone_number)) {
-   echo json_encode(["success" => false, "code" => "PHONE_REQUIRED"]);
+if (empty($email)) {
+    echo json_encode(["success" => false, "code" => "EMAIL_REQUIRED"]);
     exit;
 }
-if (!preg_match('/^05[0-9]{8}$/', $phone_number)) {
-    echo json_encode(["success" => false, "code" => "INVALID_PHONE_FORMAT"]);
+// Only the university email format is accepted: "s" + digits + "@uoh.edu.sa"
+if (!preg_match('/^s[0-9]+@uoh\.edu\.sa$/', $email)) {
+    echo json_encode(["success" => false, "code" => "INVALID_UNIVERSITY_EMAIL"]);
+    exit;
+}
+$wait = otpWaitSeconds($conn, $email);
+if ($wait > 0) {
+    echo json_encode(["success" => false, "code" => "TOO_MANY_REQUESTS", "data" => ["retry_after_seconds" => $wait]]);
+    $conn->close();
     exit;
 }
 
 $code = strval(random_int(100000, 999999));
-$expires_at = date("Y-m-d H:i:s", strtotime("+5 minutes"));
+$expires_at = date("Y-m-d H:i:s", time() + OTP_LIFETIME_SECONDS);
 
-$stmt = $conn->prepare("INSERT INTO verificationcode (phone_number, code, expires_at, is_used) VALUES (?, ?, ?, 0)");
-$stmt->bind_param("sss", $phone_number, $code, $expires_at);
+$stmt = $conn->prepare("INSERT INTO verificationcode (email, code, expires_at, is_used) VALUES (?, ?, ?, 0)");
+$stmt->bind_param("sss", $email, $code, $expires_at);
 
 if ($stmt->execute()) {
-    $sendResult = sendSms($phone_number, $code);
-
-    echo json_encode([
-    "success" => true,
-    "code" => "OTP_GENERATED",
-    "data" => ["code" => $sendResult["code"]]
-]);
-
+    if (sendOtpEmail($email, $code)) {
+        echo json_encode(["success" => true, "code" => "OTP_GENERATED"]);
+    } else {
+        echo json_encode(["success" => false, "code" => "OTP_SEND_FAILED"]);
+    }
 } else {
-    echo json_encode([
-    "success" => false,
-    "code" => "OTP_SEND_FAILED"
-]);
+    echo json_encode(["success" => false, "code" => "OTP_SEND_FAILED"]);
 }
 
 $stmt->close();
