@@ -1,5 +1,4 @@
 <?php
-
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as MailException;
 
@@ -48,6 +47,16 @@ function sendAdminCode(string $toEmail, string $toName, string $code): bool {
         error_log('Admin OTP mail error: ' . $mail->ErrorInfo); // see C:\xampp\apache\logs\error.log
         return false;
     }
+}
+
+// Locked after too many wrong codes (set in verify_login.php)
+if (isset($_SESSION['locked_until'])) {
+    $remaining = $_SESSION['locked_until'] - time();
+    if ($remaining > 0) {
+        echo json_encode(['success' => false, 'message' => 'Too many attempts. Try again later.', 'data' => ['retryAfterSeconds' => $remaining]]);
+        exit;
+    }
+    unset($_SESSION['locked_until']); // 10 minutes passed, allowed again
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
