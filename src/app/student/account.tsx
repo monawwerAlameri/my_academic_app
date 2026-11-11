@@ -84,7 +84,7 @@ const handleSave = async () => {
           {t('personalInfo')}
         </Text>
 
-        <Field label={t('fullName')} value={fullName} onChangeText={setFullName}editable={false} colors={colors} isRTL={isRTL} />
+        <Field label={t('fullName')} value={fullName} onChangeText={setFullName} editable={false} colors={colors} isRTL={isRTL} />
         <Field label={t('email')} value={email} onChangeText={setEmail} keyboardType="email-address" editable={false} colors={colors} isRTL={isRTL} />
         <Field label={t('phoneNumber')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={false} colors={colors} isRTL={isRTL} />
 
@@ -113,7 +113,7 @@ function Field({ label, value, onChangeText, keyboardType, secure, editable, col
     <View style={commonStyles.field}>
       <Text style={[commonStyles.fieldLabel, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
       <TextInput
-        style={[commonStyles.fieldInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
+        style={[commonStyles.fieldInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.primary, textAlign: isRTL ? 'right' : 'left' } ,editable === false && { opacity: 0.6 }]}
         value={value}
         onChangeText={onChangeText}
         placeholderTextColor={colors.placeholder}
