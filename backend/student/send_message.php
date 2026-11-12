@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
 
 // The request is bigger than post_max_size, so PHP dropped all of it
@@ -22,6 +23,7 @@ if (empty($student_id) || empty($faculty_id)) {
     echo json_encode(["success" => false, "code" => "ALL_FIELDS_REQUIRED"]);
     exit;
 }
+requireActiveStudent($conn, $student_id); 
 
 if ($message_text === '' && !$has_file) {
     echo json_encode(["success" => false, "code" => "MESSAGE_REQUIRED"]);

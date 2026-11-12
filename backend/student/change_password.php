@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -11,6 +12,7 @@ if (empty($student_id) || empty($current_password) || empty($new_password)) {
     echo json_encode(["success" => false, "code" => "ALL_FIELDS_REQUIRED"]);
     exit;
 }
+requireActiveStudent($conn, $student_id);
 
 $stmt = $conn->prepare("SELECT password FROM student WHERE student_id = ?");
 $stmt->bind_param("s", $student_id);

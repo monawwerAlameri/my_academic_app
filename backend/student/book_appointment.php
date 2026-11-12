@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
 // Waiting lists of appointment times that already started are removed
 $clean_now = date("Y-m-d H:i:s");
@@ -25,6 +26,7 @@ if (
     echo json_encode(["success" => false, "code" => "ALL_FIELDS_REQUIRED"]);
     exit;
 }
+requireActiveStudent($conn, $student_id); 
 
 if ($appointment_type !== 'In-Person' && $appointment_type !== 'Online') {
     echo json_encode(["success" => false, "code" => "INVALID_APPOINTMENT_TYPE"]);

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -10,6 +11,7 @@ if (empty($student_id) || empty($phone_number)) {
     echo json_encode(["success" => false, "code" => "ALL_FIELDS_REQUIRED"]);
     exit;
 }
+requireActiveStudent($conn, $student_id); 
 
 if (!preg_match('/^05[0-9]{8}$/', $phone_number)) {
     echo json_encode(["success" => false, "code" => "INVALID_PHONE_FORMAT"]);

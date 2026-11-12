@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
 // Booked appointments whose end time has passed become Completed
 $complete_now = date("Y-m-d H:i:s");
@@ -20,6 +21,7 @@ if (empty($appointment_id)) {
     echo json_encode(["success" => false, "code" => "APPOINTMENT_ID_REQUIRED"]);
     exit;
 }
+requireActiveStudent($conn, $student_id); 
 
 $stmt = $conn->prepare("
     SELECT

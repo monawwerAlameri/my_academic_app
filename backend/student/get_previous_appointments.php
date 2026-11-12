@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -9,6 +10,7 @@ if (empty($student_id)) {
     echo json_encode(["success" => false, "code" => "STUDENT_ID_REQUIRED"]);
     exit;
 }
+requireActiveStudent($conn, $student_id);
 
 $stmt = $conn->prepare("
     SELECT
