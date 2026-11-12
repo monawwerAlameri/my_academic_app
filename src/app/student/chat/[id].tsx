@@ -103,6 +103,10 @@ useEffect(() => {
           })}
           </DataState>
         </ScrollView>
+
+        {readOnly ? (
+          <Text style={[commonStyles.paragraph, { color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 20, paddingTop: 10 }]}>{t('chatReadOnly')}</Text>
+        ) : (
         <View style={[styles.inputRow, reverse]}>
           <TextInput
             style={[styles.input, { backgroundColor: colors.white, color: colors.primary, borderColor: colors.border, textAlign: isRTL ? 'right' : 'left' }]}
@@ -112,6 +116,7 @@ useEffect(() => {
             onChangeText={setDraft}
           />
           <TouchableOpacity
+                  
             style={[styles.sendButton, { backgroundColor: colors.primary }]}
             activeOpacity={0.7}
             onPress={handleSend}
@@ -119,6 +124,7 @@ useEffect(() => {
             <Ionicons name="send" size={20} color={colors.white} />
           </TouchableOpacity>
         </View>
+                )}
 
         <View style={{ height: 90 }} />
       </KeyboardAvoidingView>
@@ -135,3 +141,4 @@ const styles = StyleSheet.create({
   input: { flex: 1, borderRadius: 24, height: 46, paddingHorizontal: 16, borderWidth: 1 },
   sendButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });
+
