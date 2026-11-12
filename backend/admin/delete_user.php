@@ -1,8 +1,10 @@
 <?php
 
+
 header('Content-Type: application/json');
 session_start();
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/waiting_list_helper.php';
 
 if (!isset($_SESSION['admin_id'])) {
     echo json_encode([
@@ -44,6 +46,9 @@ try {
             $stmt->execute();
             $stmt->close();
         }
+
+        // Leave every waiting list first so the other students' positions stay in order
+        removeStudentFromWaitingLists($conn, $userId);
 
         $stmt = $conn->prepare("DELETE FROM student WHERE student_id = ?");
     } else {
