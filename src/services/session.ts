@@ -1,10 +1,12 @@
-let currentFacultyId = 'Fa001'; //  لازم يكون معرّف دكتور موجود عندنا بقاعدة البيانات
-
+let currentFacultyId = '';
 export const getFacultyId = async () => currentFacultyId;
 export const setFacultyId = (id: string) => { currentFacultyId = id; };
 
-
-let currentStudentId = '202100000'; // مؤقت لازم نبدله برقم جامعي لطالبة موجودة بقاعدة البيانات 
-
+let currentStudentId = '';
 export const getStudentId = async () => currentStudentId;
 export const setStudentId = (id: string) => { currentStudentId = id; };
+
+export const clearSession = () => {
+  currentFacultyId = '';
+  currentStudentId = '';
+};

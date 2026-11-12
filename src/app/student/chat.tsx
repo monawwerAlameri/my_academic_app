@@ -32,7 +32,7 @@ export default function ChatScreen() {
   const openChat = (conversation: Conversation) => {
     router.push({
       pathname: '/student/chat/[id]',
-      params: { id: conversation.id, name: conversation.name },
+      params: { id: conversation.id, name: conversation.name, canSend: conversation.canSend ? '1' : '0' },
     });
   };
 

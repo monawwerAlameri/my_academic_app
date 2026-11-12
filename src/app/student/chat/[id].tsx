@@ -25,7 +25,8 @@ import { commonStyles } from '../../../theme/styles';
 
 export default function ChatConversationScreen() {
   const { colors, t, isRTL } = useAppSettings();
-  const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
+  const { id, name, canSend } = useLocalSearchParams<{ id: string; name: string; canSend?: string }>();
+  const readOnly = canSend === '0';
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
 const { data: messages, loading, error, reload, silentReload } =
@@ -42,7 +43,7 @@ useEffect(() => {
 
  const handleSend = async () => {
   const text = draft.trim();
-  if (text.length === 0 || sending) return;
+    if (text.length === 0 || sending || readOnly) return;
   setSending(true);
   try {
     await sendMessage(id, text);

@@ -192,11 +192,14 @@ export const updateFacultyProfile = async (p: FacultyProfile) =>
     body: JSON.stringify(d),
   });
 
-  export const facultyLogin = (faculty_id: string, password: string) =>
-  request<{ data: any }>('/Faculty/login.php', {
+ export const facultyLogin = async (faculty_id: string, password: string) => {
+  const res = await request<{ data: { email: string; full_name: string } }>('/Faculty/login.php', {
     method: 'POST',
     body: JSON.stringify({ faculty_id, password }),
   });
+  return res.data;
+};
+
   export const changeFacultyPassword = async (d: { currentPassword: string; newPassword: string }) =>
   request<void>('/Faculty/change_password.php', {
     method: 'POST',
@@ -245,3 +248,5 @@ export const sendFacultyMessage = async (studentId: string, text: string) =>
     method: 'POST',
     body: JSON.stringify({ faculty_id: await getFacultyId(), student_id: studentId, message_text: text }),
   });
+
+  

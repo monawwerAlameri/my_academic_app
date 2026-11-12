@@ -45,7 +45,7 @@ useEffect(() => { markNotificationsRead().catch(() => {}); }, []);
   onRetry={reload}
 >
   {notifications.map((item) => (
-    <NotificationCard key={item.id} item={item} title={t(item.titleKey as any)} colors={colors} isRTL={isRTL} />
+    <NotificationCard key={item.id} item={item} title={t(item.titleKey as any)} colors={colors} isRTL={isRTL} t={t} />
   ))}
 </DataState>
 
@@ -57,7 +57,7 @@ useEffect(() => { markNotificationsRead().catch(() => {}); }, []);
   );
 }
 
-function NotificationCard({ item, title, colors, isRTL }: any) {
+function NotificationCard({ item, title, colors, isRTL, t }: any) {
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
 
   return (
@@ -68,6 +68,12 @@ function NotificationCard({ item, title, colors, isRTL }: any) {
         <Text style={[commonStyles.name, align, { color: colors.primary }]}>{title}</Text>
         <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>{item.date}</Text>
         <Text style={[styles.smallText, align, { color: colors.textSecondary, marginTop: 6 }]}>{item.message}</Text>
+                {item.by === 'faculty' && (
+          <Text style={[styles.smallText, align, { color: colors.danger, marginTop: 4 }]}>{t('cancelledByDoctor')}</Text>
+        )}
+        {item.by === 'student' && (
+          <Text style={[styles.smallText, align, { color: colors.textSecondary, marginTop: 4 }]}>{t('cancelledByYou')}</Text>
+        )}
       </View>
     </View>
   );

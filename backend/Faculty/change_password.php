@@ -49,6 +49,7 @@ if ($result->num_rows === 0) {
     if (!password_verify($currentPassword, $faculty["password"])) {
 
         $response["message"] = "Current password is incorrect";
+        $response["code"] = "INVALID_CURRENT_PASSWORD";
 
     } else {
 

@@ -183,6 +183,7 @@ export interface NotificationItem {
   date: string;
   message: string;
   isRead: boolean;
+  by?: string;
 }
 
 const notifTitleKey = (type: string) => {
@@ -198,12 +199,14 @@ const readMessage = (raw: string) => {
   try {
     const p = JSON.parse(raw);
     const when = [p.date, p.time ? fromApiTime(p.time) : ''].filter(Boolean).join(' ');
-    return [p.doctor, when].filter(Boolean).join(' · ');
-  } catch {
+    return [p.doctor, when, p.reason].filter(Boolean).join(' · ');  } catch {
     return raw ?? '';
   }
 };
 
+const readBy = (raw: string) => {
+  try { return JSON.parse(raw)?.by as string | undefined; } catch { return undefined; }
+};
 export const getNotifications = async (): Promise<NotificationItem[]> => {
   const rows = ((await callAsStudent<any[]>('get_notifications')) ?? []);
   return rows.map((n) => ({
@@ -211,6 +214,7 @@ export const getNotifications = async (): Promise<NotificationItem[]> => {
     titleKey: notifTitleKey(n.notification_type),
     date: String(n.notification_time ?? '').slice(0, 10),
     message: readMessage(n.message),
+    by: readBy(n.message),
     isRead: truthy(n.is_read),
   }));
 };
@@ -225,6 +229,7 @@ export interface Conversation {
   time: string;
   unread: number;
   isNow: boolean;
+  canSend: boolean;
 }
 export interface Message { id: string; from: 'me' | 'them'; text: string; time: string; }
 
@@ -237,8 +242,10 @@ export const getConversations = async (): Promise<Conversation[]> => {
     time: clockOf(c.last_message_time ?? ''),
     unread: Number(c.unread_count ?? 0),
     isNow: truthy(c.is_now),
+    canSend: c.can_send === undefined ? true : truthy(c.can_send),
   }));
 };
+
 
 export const getMessages = async (chatId: string): Promise<Message[]> => {
   const rows = ((await callAsStudent<any[]>('get_messages', { faculty_id: chatId })) ?? []);

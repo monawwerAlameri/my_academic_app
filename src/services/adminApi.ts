@@ -1,27 +1,28 @@
-// endpoints الأدمن + دوال الاتصال بالباك اند (backend/admin).
-// غيّري SERVER_IP لـ IPv4 حق اللابتوب اللي شغال عليه XAMPP (من أمر ipconfig).
-// الجوال واللابتوب لازم على نفس الواي فاي، ولو تغيرت الشبكة يتغير الـ IP.
-export const SERVER_IP = 'YOUR_IP';
-export const BASE_URL = 'http://' + SERVER_IP + '/my_academic_app/backend/admin';
+
+import { BASE_URL } from './api';
+
+const ADMIN_URL = BASE_URL + '/admin';
 
 export const ADMIN_ENDPOINTS = {
-  login: BASE_URL + '/login.php',
-  verifyLogin: BASE_URL + '/verify_login.php',
-  getUsers: BASE_URL + '/get_users.php',
-  addDoctor: BASE_URL + '/add_doctor.php',
-  deleteUser: BASE_URL + '/delete_user.php',
-  updateUserStatus: BASE_URL + '/update_user_status.php',
-  getAppointments: BASE_URL + '/get_appointments.php',
-  getDashboard: BASE_URL + '/get_dashboard.php',
-  getReports: BASE_URL + '/get_reports.php',
-  getReviews: BASE_URL + '/get_reviews.php',
-  addUser: BASE_URL + '/add_user.php', // احتياطي، الواجهة الحالية ما تستخدمه
+  login: ADMIN_URL + '/login.php',
+  verifyLogin: ADMIN_URL + '/verify_login.php',
+  logout: ADMIN_URL + '/logout.php',
+  getUsers: ADMIN_URL + '/get_users.php',
+  addDoctor: ADMIN_URL + '/add_doctor.php',
+  deleteUser: ADMIN_URL + '/delete_user.php',
+  updateUserStatus: ADMIN_URL + '/update_user_status.php',
+  getAppointments: ADMIN_URL + '/get_appointments.php',
+  getDashboard: ADMIN_URL + '/get_dashboard.php',
+  getReports: ADMIN_URL + '/get_reports.php',
+  getReviews: ADMIN_URL + '/get_reviews.php',
+  addUser: BASE_URL 
+  + '/add_user.php', 
 };
 
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
-  data: T | null; // عند الفشل: success=false و data=null
+  data: T | null; 
 }
 
 export type UserRoleApi = 'Student' | 'Faculty';
@@ -75,7 +76,9 @@ export const adminApi = {
     post<AdminLoginStartData>(ADMIN_ENDPOINTS.login, { username, password }),
   verifyLogin: (code: string) =>
     post<AdminLoginData>(ADMIN_ENDPOINTS.verifyLogin, { code }),
+  logout: () => post<null>(ADMIN_ENDPOINTS.logout, {}),
   getUsers: () => request<ApiUser[]>(ADMIN_ENDPOINTS.getUsers),
+
   addDoctor: (fullName: string, email: string, department: string) =>
     post<AddDoctorData>(ADMIN_ENDPOINTS.addDoctor, { fullName, email, department }),
   deleteUser: (userId: string, role: UserRoleApi) =>
@@ -91,3 +94,4 @@ export const adminApi = {
   getDoctorReviews: (facultyId: string) =>
     request<DoctorReviewsData>(ADMIN_ENDPOINTS.getReviews + '?faculty_id=' + facultyId),
 };
+
