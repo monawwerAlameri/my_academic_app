@@ -1,31 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { DataState } from '../../components/DataState';
 import { FacultyTabBar } from '../../components/FacultyTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { useFetch } from '../../hooks/useFetch';
+import { FacultyNotification, getFacultyNotifications } from '../../services/doctor';
 import { commonStyles } from '../../theme/styles';
 
-interface NotificationItem {
-  id: string;
-  title: string;
-  body: string;
-  time: string;
-}
 
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  { id: '1', title: 'New Booking Request', body: 'Sara Salem requested an in-person appointment.', time: '10 min ago' },
-  { id: '2', title: 'Booking Cancelled', body: 'Fatimah Abdullah cancelled her 11:00 AM appointment.', time: '1 hour ago' },
-  { id: '3', title: 'New Review', body: 'Reem Omar left a 5-star review.', time: 'Yesterday' },
-];
+
+const titleKey = (type: string) => {
+  const s = (type ?? '').toLowerCase();
+  if (s.includes('cancel')) return 'notifCancellation';
+  if (s.includes('book')) return 'notifBooking';
+  if (s.includes('review')) return 'notifReview';
+  return 'notificationTitle';
+};
 
 export default function FacultyNotificationsScreen() {
   const { colors, t, isRTL } = useAppSettings();
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
-
-  const removeNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  };
+  const { data: notifications, loading, error, reload } = useFetch<FacultyNotification[]>(getFacultyNotifications, []);
+ 
 
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
 
@@ -40,30 +36,31 @@ export default function FacultyNotificationsScreen() {
         </View>
 
         <View style={[commonStyles.panel, { borderColor: colors.border }]}>
-          {notifications.length === 0 ? (
-            <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noNotifications')}</Text>
-          ) : (
-            notifications.map((n, index) => (
-              <View
-                key={n.id}
-                style={[
-                  commonStyles.menuRow,
-                  index < notifications.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-                  isRTL && { flexDirection: 'row-reverse' },
-                ]}
-              >
-                <Ionicons name="notifications" size={22} color={colors.primary} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[commonStyles.name, align, { color: colors.primary }]}>{n.title}</Text>
-                  <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>{n.body}</Text>
-                  <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>{n.time}</Text>
-                </View>
-                <TouchableOpacity activeOpacity={0.7} onPress={() => removeNotification(n.id)}>
-                  <Ionicons name="close" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-            ))
-          )}
+         <DataState
+  loading={loading}
+  error={error}
+  empty={notifications.length === 0}
+  emptyText={t('noNotifications')}
+  onRetry={reload}
+>
+  {notifications.map((n, index) => (
+    <View
+      key={n.id}
+      style={[
+        commonStyles.menuRow,
+        index < notifications.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+        isRTL && { flexDirection: 'row-reverse' },
+      ]}
+    >
+      <Ionicons name="notifications" size={22} color={colors.primary} />
+      <View style={{ flex: 1 }}>
+        <Text style={[commonStyles.name, align, { color: colors.primary }]}>{t(titleKey(n.type) as any)}</Text>
+        <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>{n.message}</Text>
+        <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>{String(n.time ?? '').slice(0, 16)}</Text>
+      </View>
+    </View>
+  ))}
+</DataState>
         </View>
 
         <View style={{ height: 90 }} />

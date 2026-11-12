@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
 import {
   Alert,
   SafeAreaView,
@@ -11,45 +10,39 @@ import {
   View,
 } from 'react-native';
 import { BottomTabBar } from '../../components/BottomTabBar';
+import { DataState } from '../../components/DataState';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { useFetch } from '../../hooks/useFetch';
+import { errorKey } from '../../services/errors';
+import { WaitingItem, getWaitlist, leaveWaitlist } from '../../services/student';
 import { commonStyles } from '../../theme/styles';
+import { appointmentLabel } from '../../utils/labels';
 
-interface WaitingItem {
-  id: string;
-  doctor: string;
-  office: string;
-  day: string;
-  time: string;
-  aheadOfYou: number;
-}
-
-const INITIAL_WAITING_LIST: WaitingItem[] = [
-  { id: '1', doctor: 'Dr.Laila', office: 'Office', day: 'Monday', time: '10:00-10:55 Am', aheadOfYou: 1 },
-  { id: '2', doctor: 'Dr.Salma', office: 'Office', day: 'Wednesday', time: '10:00-10:55 Am', aheadOfYou: 4 },
-  { id: '3', doctor: 'Dr.Najla', office: 'Office', day: 'Monday', time: '10:00-10:55 Am', aheadOfYou: 10 },
-];
 
 const MAX_QUEUE = 10;
 
 export default function WaitingListScreen() {
   const { colors, t, isRTL } = useAppSettings();
-  const [waitingList, setWaitingList] = useState<WaitingItem[]>(INITIAL_WAITING_LIST);
+ const { data: waitingList, loading, error, reload } = useFetch<WaitingItem[]>(getWaitlist, []);
 
-  const removeItem = (id: string) => {
-    Alert.alert(
-      'Leave Waiting List',
-      'Are you sure you want to remove yourself from the waiting list?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Remove',
-          style: 'destructive',
-          onPress: () => setWaitingList((prev) => prev.filter((item) => item.id !== id)),
-        },
-      ]
-    );
-  };
 
+const removeItem = (id: string) => {
+  Alert.alert(t('leaveWaitlistTitle'), t('leaveWaitlistMsg'), [
+    { text: t('no'), style: 'cancel' },
+    {
+      text: t('yesRemove'),
+      style: 'destructive',
+      onPress: async () => {
+        try {
+          await leaveWaitlist(id);
+          reload();
+        } catch (e) {
+          Alert.alert(t('error'), t(errorKey(e) as any));
+        }
+      },
+    },
+  ]);
+};
   const getProgressColor = (aheadOfYou: number) => {
     if (aheadOfYou <= 2) return colors.success;
     if (aheadOfYou <= 6) return colors.warning;
@@ -72,10 +65,14 @@ export default function WaitingListScreen() {
         </View>
 
         <View style={[commonStyles.panel, { borderColor: colors.border }]}>
-          {waitingList.length === 0 ? (
-            <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noWaitingAppointments')}</Text>
-          ) : (
-            waitingList.map((item, index) => {
+          <DataState
+  loading={loading}
+  error={error}
+  empty={waitingList.length === 0}
+  emptyText={t('noWaitingAppointments')}
+  onRetry={reload}
+>
+  {waitingList.map((item, index) => {
               const progressColor = getProgressColor(item.aheadOfYou);
               return (
                 <View
@@ -89,7 +86,7 @@ export default function WaitingListScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={[commonStyles.name, { color: colors.primary }]}>{item.doctor}</Text>
                     <Text style={[styles.smallText, { color: colors.textSecondary }]}>
-                      {item.office} · {item.day} · {item.time}
+                      {appointmentLabel(item.type, item.subtype, t)} · {item.time}
                     </Text>
                   </View>
 
@@ -107,8 +104,8 @@ export default function WaitingListScreen() {
                   </TouchableOpacity>
                 </View>
               );
-            })
-          )}
+                     })}
+          </DataState>
         </View>
 
         <View style={{ height: 90 }} />

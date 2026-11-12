@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
+  Alert,
   Modal,
   SafeAreaView,
   ScrollView,
@@ -12,11 +13,16 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { DataState } from '../../components/DataState';
 import { FacultyTabBar } from '../../components/FacultyTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { useFetch } from '../../hooks/useFetch';
+import { DayKey, ScheduleSlot, addSlot, cancelAllOnDate, deleteSlot, getSchedule, toApiTime } from '../../services/doctor';
+import { errorKey } from '../../services/errors';
 import { commonStyles } from '../../theme/styles';
 
-type DayKey = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday';
+
+
 
 const days: { key: DayKey; shortKey: 'sun' | 'mon' | 'tue' | 'wed' | 'thu' }[] = [
   { key: 'sunday', shortKey: 'sun' },
@@ -26,19 +32,8 @@ const days: { key: DayKey; shortKey: 'sun' | 'mon' | 'tue' | 'wed' | 'thu' }[] =
   { key: 'thursday', shortKey: 'thu' },
 ];
 
-type Slot = { id: string; time: string; location: string; isOnline: boolean };
 
-const initialSlots: Record<DayKey, Slot[]> = {
-  sunday: [
-    { id: '1', time: '9:00 - 10:00 am', location: '203-17D', isOnline: false },
-    { id: '2', time: '11:00 - 11:55 am', location: '203-17D', isOnline: false },
-    { id: '3', time: '3:00 - 5:00 pm', location: '', isOnline: true },
-  ],
-  monday: [],
-  tuesday: [],
-  wednesday: [],
-  thursday: [],
-};
+
 
 function ModalField({ label, value, onChangeText, placeholder, colors }: any) {
   return (
@@ -71,13 +66,24 @@ function ModalButtons({ onCancel, onConfirm, confirmLabel, confirmColor, cancelL
   );
 }
 
+
+const nextDateOf = (day: DayKey) => {
+  const index = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4 }[day];
+  const d = new Date();
+  d.setDate(d.getDate() + ((index - d.getDay() + 7) % 7));
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+};
+
 export default function FacultySchedule() {
   const { colors, t, isRTL } = useAppSettings();
   const [selectedDay, setSelectedDay] = useState<DayKey>('sunday');
-  const [availableDays, setAvailableDays] = useState<Record<DayKey, boolean>>({
-    sunday: true, monday: false, tuesday: false, wednesday: false, thursday: false,
-  });
-  const [allSlots, setAllSlots] = useState<Record<DayKey, Slot[]>>(initialSlots);
+const [closedDays, setClosedDays] = useState<Record<DayKey, boolean>>({
+  sunday: false, monday: false, tuesday: false, wednesday: false, thursday: false,
+});
+const [busy, setBusy] = useState(false);
+const { data: allSlots, loading, error, reload } = useFetch<ScheduleSlot[]>(getSchedule, []);
 
   // Add-slot modal state
   const [addModalVisible, setAddModalVisible] = useState(false);
@@ -91,8 +97,7 @@ export default function FacultySchedule() {
   const [closeModalVisible, setCloseModalVisible] = useState(false);
   const [closeReason, setCloseReason] = useState('');
 
-  const slots = allSlots[selectedDay];
-  const align = { textAlign: isRTL ? 'right' : 'left' } as const;
+const slots = allSlots.filter((s) => s.day === selectedDay);  const align = { textAlign: isRTL ? 'right' : 'left' } as const;
   const reverse = isRTL && { flexDirection: 'row-reverse' as const };
 
   const chipStyle = (active: boolean) => [
@@ -101,21 +106,29 @@ export default function FacultySchedule() {
   ];
   const chipTextStyle = (active: boolean) => [commonStyles.chipText, { color: active ? colors.white : colors.textSecondary }];
 
-  const handleToggleDay = (value: boolean) => {
-    if (!value && slots.length > 0) {
-      // Turning off a day that has bookings -> ask for confirmation first
-      setCloseModalVisible(true);
-      return;
-    }
-    setAvailableDays((prev) => ({ ...prev, [selectedDay]: value }));
-  };
+const handleToggleDay = (value: boolean) => {
+  if (!value && slots.length > 0) {
+    setCloseModalVisible(true);
+    return;
+  }
+  setClosedDays((prev) => ({ ...prev, [selectedDay]: !value }));
+};
 
-  const confirmCloseDay = () => {
-    setAvailableDays((prev) => ({ ...prev, [selectedDay]: false }));
-    // Frontend-only for now: bookings would be cancelled + students notified via backend later
+ 
+const confirmCloseDay = async () => {
+  if (busy) return;
+  setBusy(true);
+  try {
+    await cancelAllOnDate(nextDateOf(selectedDay), closeReason.trim() || undefined);
+    setClosedDays((prev) => ({ ...prev, [selectedDay]: true }));
     setCloseModalVisible(false);
     setCloseReason('');
-  };
+  } catch (e) {
+    Alert.alert(t('error'), t(errorKey(e) as any));
+  } finally {
+    setBusy(false);
+  }
+};
 
   const openAddModal = () => {
     setNewStart('');
@@ -126,25 +139,44 @@ export default function FacultySchedule() {
     setAddModalVisible(true);
   };
 
-  const handleSaveSlot = () => {
-    if (!newStart.trim() || !newEnd.trim()) {
-      setAddError(t('fillRequiredFields'));
-      return;
-    }
-    const newSlot: Slot = {
-      id: Date.now().toString(),
-      time: `${newStart.trim()} - ${newEnd.trim()}`,
-      location: newIsOnline ? '' : newLocation.trim(),
-      isOnline: newIsOnline,
-    };
-    setAllSlots((prev) => ({ ...prev, [selectedDay]: [...prev[selectedDay], newSlot] }));
-    setAvailableDays((prev) => ({ ...prev, [selectedDay]: true }));
+  
+      const handleSaveSlot = async () => {
+  if (busy) return;
+  if (!newStart.trim() || !newEnd.trim()) {
+    setAddError(t('fillRequiredFields'));
+    return;
+  }
+  const start = toApiTime(newStart);
+  const end = toApiTime(newEnd);
+  if (!start || !end || end <= start) {
+    setAddError(t('invalidTime'));
+    return;
+  }
+  if (!newIsOnline && !newLocation.trim()) {
+    setAddError(t('fillLocation'));
+    return;
+  }
+  setBusy(true);
+  try {
+    await addSlot({ day: selectedDay, start, end, isOnline: newIsOnline, location: newLocation.trim() });
+    setClosedDays((prev) => ({ ...prev, [selectedDay]: false }));
     setAddModalVisible(false);
-  };
+    reload();
+  } catch (e) {
+    setAddError(t(errorKey(e) as any));
+  } finally {
+    setBusy(false);
+  }
+};
 
-  const handleDeleteSlot = (id: string) => {
-    setAllSlots((prev) => ({ ...prev, [selectedDay]: prev[selectedDay].filter((s) => s.id !== id) }));
-  };
+ const handleDeleteSlot = async (id: string) => {
+  try {
+    await deleteSlot(id);
+    reload();
+  } catch (e) {
+    Alert.alert(t('error'), t(errorKey(e) as any));
+  }
+};
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -164,17 +196,20 @@ export default function FacultySchedule() {
             {t('availableOn')} {t(selectedDay)}
           </Text>
           <Switch
-            value={availableDays[selectedDay]}
+            value={slots.length > 0 && !closedDays[selectedDay]}
             onValueChange={handleToggleDay}
             trackColor={{ false: colors.border, true: colors.primary }}
             thumbColor={colors.white}
           />
         </View>
 
-        {slots.length === 0 && (
-          <Text style={[commonStyles.paragraph, align, { color: colors.textSecondary }]}>{t('noSlotsYet')}</Text>
-        )}
-
+      <DataState
+  loading={loading}
+  error={error}
+  empty={slots.length === 0}
+  emptyText={t('noSlotsYet')}
+  onRetry={reload}
+>
         {slots.map((slot) => (
           <View key={slot.id} style={[commonStyles.card, { alignItems: 'center', borderColor: colors.border }, reverse]}>
             <View style={{ flex: 1 }}>
@@ -188,6 +223,8 @@ export default function FacultySchedule() {
             </TouchableOpacity>
           </View>
         ))}
+
+</DataState>
 
         <TouchableOpacity
           style={[commonStyles.card, { borderColor: colors.border, borderStyle: 'dashed', justifyContent: 'center' }]}

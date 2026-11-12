@@ -2,25 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { DataState } from '../../components/DataState';
 import { FacultyTabBar } from '../../components/FacultyTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { useFetch } from '../../hooks/useFetch';
+import { FacultyReview, getFacultyReviews } from '../../services/doctor';
 import { commonStyles } from '../../theme/styles';
 
-interface Review {
-  id: string;
-  studentName: string;
-  rating: number;
-  date: string;
-  comment: string;
-}
 
-const SUMMARY = { average: 4.7, totalReviews: 128 };
 
-const REVIEWS: Review[] = [
-  { id: '1', studentName: 'Sara Almutairi', rating: 5, date: 'May 13,2026', comment: 'Dr. Sara explains complex topics in a very clear and simple way.' },
-  { id: '2', studentName: 'Reem Omar', rating: 5, date: 'May 14,2026', comment: "One of the best professors I've had. Very supportive and approachable." },
-  { id: '3', studentName: 'Salma', rating: 5, date: 'May 16,2026', comment: 'Great lecturer and very knowledgeable. her feedback helps a lot in improving.' },
-];
 
 function StarRow({ rating, size = 16, colors }: { rating: number; size?: number; colors: any }) {
   return (
@@ -36,7 +26,13 @@ export default function FacultyReviewsScreen() {
   const { colors, t, isRTL } = useAppSettings();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const selected = REVIEWS.find((r) => r.id === selectedId) ?? null;
+  const { data: reviews, loading, error, reload } = useFetch<FacultyReview[]>(getFacultyReviews, []);
+
+const selected = reviews.find((r) => r.id === selectedId) ?? null;
+const total = reviews.length;
+const average = total ? Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / total) * 10) / 10 : 0;
+const nameOf = (r: FacultyReview) => (r.anonymous ? t('anonymousReviewer') : r.studentName);
+
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
   const reverse = isRTL && { flexDirection: 'row-reverse' as const };
 
@@ -57,7 +53,7 @@ export default function FacultyReviewsScreen() {
             <View style={[commonStyles.headerRow, { marginBottom: 0 }, reverse]}>
               <Ionicons name="person-circle-outline" size={44} color={colors.primary} />
               <View style={{ flex: 1 }}>
-                <Text style={[commonStyles.name, align, { color: colors.primary }]}>{selected.studentName}</Text>
+                <Text style={[commonStyles.name, align, { color: colors.primary }]}>{nameOf(selected)}</Text>
                 <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>{selected.date}</Text>
               </View>
             </View>
@@ -69,25 +65,33 @@ export default function FacultyReviewsScreen() {
             <Text style={[commonStyles.paragraph, align, { color: colors.primary }]}>{selected.comment}</Text>
           </View>
         ) : (
-          <>
+
+
+          <DataState
+  loading={loading}
+  error={error}
+  empty={reviews.length === 0}
+  emptyText={t('noReviewsYet')}
+  onRetry={reload}
+>
             <View style={[commonStyles.panel, styles.card, { borderColor: colors.border, marginBottom: 20 }]}>
               <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>{t('ratingSummary')}</Text>
               <View style={[commonStyles.headerRow, { marginBottom: 0 }, reverse]}>
-                <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>{SUMMARY.average}</Text>
-                <StarRow rating={Math.round(SUMMARY.average)} size={22} colors={colors} />
+                <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>{average}</Text>
+                <StarRow rating={Math.round(average)} size={22} colors={colors} />
               </View>
               <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>
-                {t('basedOnReviews')} {SUMMARY.totalReviews} {t('reviewsWord')}
+                {t('basedOnReviews')} {total} {t('reviewsWord')}
               </Text>
             </View>
 
             <View style={[commonStyles.panel, { borderColor: colors.border }]}>
-              {REVIEWS.map((review, index) => (
+              {reviews.map((review, index) => (
                 <TouchableOpacity
                   key={review.id}
                   style={[
                     commonStyles.menuRow,
-                    index < REVIEWS.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                    index < reviews.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
                     reverse,
                   ]}
                   activeOpacity={0.7}
@@ -95,7 +99,7 @@ export default function FacultyReviewsScreen() {
                 >
                   <Ionicons name="person-circle-outline" size={32} color={colors.primary} />
                   <View style={{ flex: 1 }}>
-                    <Text style={[commonStyles.name, align, { color: colors.primary }]}>{review.studentName}</Text>
+                    <Text style={[commonStyles.name, align, { color: colors.primary }]}>{nameOf(review)}</Text>
                     <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>{review.date}</Text>
                     <Text style={[styles.smallText, align, { color: colors.primary }]} numberOfLines={2}>{review.comment}</Text>
                   </View>
@@ -104,7 +108,7 @@ export default function FacultyReviewsScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-          </>
+          </DataState>
         )}
 
         <View style={{ height: 90 }} />

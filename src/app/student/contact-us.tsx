@@ -11,9 +11,8 @@ export default function ContactUsScreen() {
   const CONTACT_ROWS = [
     { icon: 'mail-outline' as const, label: t('contactEmail'), value: 'support@academicbooking.uoh.edu.sa' },
     { icon: 'call-outline' as const, label: t('contactPhone'), value: '+966 16 000 0000' },
-    { icon: 'location-outline' as const, label: t('contactAddress'), value: 'University of Hail, College of CSE' },
-  ];
-
+    { icon: 'location-outline' as const, label: t('contactAddress'), value: t('contactAddressValue') },
+  ]
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={commonStyles.scrollContentHeader} showsVerticalScrollIndicator={false}>

@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  Alert,
   SafeAreaView,
   ScrollView,
   Text,
@@ -11,18 +12,54 @@ import {
 } from 'react-native';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { useFetch } from '../../hooks/useFetch';
+import { errorKey } from '../../services/errors';
+import { Profile, changePassword, getProfile } from '../../services/student';
 import { commonStyles } from '../../theme/styles';
 
 export default function AccountScreen() {
-  const { colors, t, isRTL } = useAppSettings();
-  const [fullName, setFullName] = useState('Nora Alshammari');
-  const [email, setEmail] = useState('nora@uoh.edu.sa');
-  const [phone, setPhone] = useState('0557863246');
+const { colors, t, isRTL } = useAppSettings();
+const [fullName, setFullName] = useState('');
+const [email, setEmail] = useState('');
+const [phone, setPhone] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleSave = () => router.back();
+  // تحميل البيانات من الباك
+  const { data: profile } = useFetch<Profile | null>(getProfile, null);
+
+useEffect(() => {
+  if (profile) {
+    setFullName(profile.fullName);
+    setEmail(profile.email);
+    setPhone(profile.phone);
+  }
+}, [profile]);
+
+const handleSave = async () => {
+  if (!currentPassword && !newPassword && !confirmPassword) {
+    router.back();
+    return;
+  }
+  if (!currentPassword || !newPassword) {
+    Alert.alert(t('error'), t('err_ALL_FIELDS_REQUIRED'));
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    Alert.alert(t('error'), t('passwordMismatch'));
+    return;
+  }
+  try {
+    await changePassword({ currentPassword, newPassword });
+    Alert.alert(t('passwordChanged'));
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+  } catch (e) {
+    Alert.alert(t('error'), t(errorKey(e) as any));
+  }
+};
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -47,9 +84,9 @@ export default function AccountScreen() {
           {t('personalInfo')}
         </Text>
 
-        <Field label={t('fullName')} value={fullName} onChangeText={setFullName} colors={colors} isRTL={isRTL} />
-        <Field label={t('email')} value={email} onChangeText={setEmail} keyboardType="email-address" colors={colors} isRTL={isRTL} />
-        <Field label={t('phoneNumber')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" colors={colors} isRTL={isRTL} />
+        <Field label={t('fullName')} value={fullName} onChangeText={setFullName} editable={false} colors={colors} isRTL={isRTL} />
+        <Field label={t('email')} value={email} onChangeText={setEmail} keyboardType="email-address" editable={false} colors={colors} isRTL={isRTL} />
+        <Field label={t('phoneNumber')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={false} colors={colors} isRTL={isRTL} />
 
         <Text style={[commonStyles.sectionTitle, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>
           {t('changePassword')}
@@ -71,17 +108,18 @@ export default function AccountScreen() {
   );
 }
 
-function Field({ label, value, onChangeText, keyboardType, secure, colors, isRTL }: any) {
+function Field({ label, value, onChangeText, keyboardType, secure, editable, colors, isRTL }: any) {
   return (
     <View style={commonStyles.field}>
       <Text style={[commonStyles.fieldLabel, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
       <TextInput
-        style={[commonStyles.fieldInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
+        style={[commonStyles.fieldInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.primary, textAlign: isRTL ? 'right' : 'left' } ,editable === false && { opacity: 0.6 }]}
         value={value}
         onChangeText={onChangeText}
         placeholderTextColor={colors.placeholder}
         keyboardType={keyboardType}
         secureTextEntry={secure}
+        editable={editable}
       />
     </View>
   );
