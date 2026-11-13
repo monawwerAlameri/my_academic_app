@@ -23,3 +23,24 @@ function requireActiveStudent($conn, $student_id) {
         exit;
     }
 }
+function requireActiveFaculty($conn, $faculty_id) {
+    $stmt = $conn->prepare("SELECT account_status FROM facultymember WHERE faculty_id = ?");
+    $stmt->bind_param("s", $faculty_id);
+    $stmt->execute();
+    $faculty = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    // الدكتور غير موجود
+    if (!$faculty) {
+        echo json_encode(["success" => false, "code" => "FACULTY_NOT_FOUND"]);
+        $conn->close();
+        exit;
+    }
+
+    // الدكتور موجود لكن حسابه مو Active (موقوف)
+    if ($faculty['account_status'] !== 'Active') {
+        echo json_encode(["success" => false, "code" => "FACULTY_NOT_ACTIVE"]);
+        $conn->close();
+        exit;
+    }
+}

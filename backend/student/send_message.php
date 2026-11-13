@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/chat.php';
 header('Content-Type: application/json');
 
 // The request is bigger than post_max_size, so PHP dropped all of it
@@ -55,23 +56,9 @@ if ($facultyFound == 0) {
     $conn->close();
     exit;
 }
-// Chat is allowed only if there is an Online appointment between them that already started
-$now_check = date("Y-m-d H:i:s");
-$chatStmt = $conn->prepare("
-    SELECT appointment_id
-    FROM appointment
-    WHERE student_id = ? AND faculty_id = ?
-    AND appointment_type = 'Online'
-    AND status IN ('Booked', 'Completed')
-    AND CONCAT(appointment_date, ' ', appointment_time) <= ?
-    LIMIT 1
-");
-$chatStmt->bind_param("sss", $student_id, $faculty_id, $now_check);
-$chatStmt->execute();
-$chatAllowed = $chatStmt->get_result()->num_rows;
-$chatStmt->close();
-
-if ($chatAllowed == 0) {
+requireActiveFaculty($conn, $faculty_id);
+// Chat exists if there are messages between them, or an Online appointment that already started
+if (!chatExists($conn, $student_id, $faculty_id)) {
     echo json_encode(["success" => false, "code" => "CHAT_NOT_ALLOWED"]);
     $conn->close();
     exit;

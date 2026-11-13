@@ -21,6 +21,7 @@ if (empty($student_id) || empty($faculty_id) || empty($rating) || $comment === '
     exit;
 }
 requireActiveStudent($conn, $student_id); 
+requireActiveFaculty($conn, $faculty_id);
 
 $rating = (int)$rating;
 if ($rating < 1 || $rating > 5) {

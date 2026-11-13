@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -27,6 +28,7 @@ if ($stmt->num_rows === 0) {
     exit;
 }
 $stmt->close();
+requireActiveFaculty($conn, $faculty_id);
 
 // Booking window: today until 30 days ahead
 $today = date('Y-m-d');
