@@ -3,19 +3,27 @@ import { router } from 'expo-router';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AdminHeader } from '../../components/AdminHeader';
 import { AdminTabBar } from '../../components/AdminTabBar';
+import { DataState } from '../../components/DataState';
 import { useAppSettings } from '../../context/AppSettingsContext';
-import { appointments, initialUsers } from '../../services/adminMockData';
+import { useFetch } from '../../hooks/useFetch';
+import { adminApi, DashboardData } from '../../services/adminApi';
 import { commonStyles } from '../../theme/styles';
 
 export default function AdminHome() {
   const { colors, t, isRTL } = useAppSettings();
 
-  const pending = appointments.filter((a) => a.status === 'pending');
+  const { data, loading, error, reload } = useFetch(async () => {
+    const res = await adminApi.getDashboard();
+    if (!res.success || !res.data) throw new Error(res.message);
+    return res.data;
+  }, null as DashboardData | null);
+
+  const pending = data?.needsAttention ?? [];
   const stats = [
-    { label: t('totalUsers'), value: initialUsers.length, icon: 'people-outline' as const },
-    { label: t('studentsLabel'), value: initialUsers.filter((u) => u.role === 'student').length, icon: 'school-outline' as const },
-    { label: t('facultyLabel'), value: initialUsers.filter((u) => u.role === 'faculty').length, icon: 'briefcase-outline' as const },
-    { label: t('pendingAppointments'), value: pending.length, icon: 'time-outline' as const },
+    { label: t('totalUsers'), value: data?.totalUsers ?? 0, icon: 'people-outline' as const },
+    { label: t('studentsLabel'), value: data?.students ?? 0, icon: 'school-outline' as const },
+    { label: t('facultyLabel'), value: data?.faculty ?? 0, icon: 'briefcase-outline' as const },
+    { label: t('pendingAppointments'), value: data?.pendingAppointments ?? 0, icon: 'time-outline' as const },
   ];
 
   const actions = [
@@ -55,25 +63,27 @@ export default function AdminHome() {
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('needsAttention')}</Text>
-        {pending.map((a) => (
-          <TouchableOpacity
-            key={a.id}
-            activeOpacity={0.8}
-            onPress={() => router.replace('/admin/appointments' as any)}
-            style={[styles.row, { borderColor: colors.border, backgroundColor: colors.cardBackground }, isRTL && { flexDirection: 'row-reverse' }]}
-          >
-            <View style={[styles.rowIcon, { backgroundColor: colors.warning + '2E' }]}>
-              <Ionicons name="time-outline" size={20} color={colors.warning} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.rowTitle, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{a.student}</Text>
-              <Text style={[styles.rowMeta, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
-                {t('withDoctor')} {a.doctor} - {a.date}, {a.time}
-              </Text>
-            </View>
-            <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.textSecondary} />
+        <DataState loading={loading} error={error} empty={pending.length === 0} emptyText={t('noAppointments')} onRetry={reload}>
+          {pending.map((a) => (
+            <TouchableOpacity
+              key={a.appointmentId}
+              activeOpacity={0.8}
+              onPress={() => router.replace('/admin/appointments' as any)}
+              style={[styles.row, { borderColor: colors.border, backgroundColor: colors.cardBackground }, isRTL && { flexDirection: 'row-reverse' }]}
+            >
+              <View style={[styles.rowIcon, { backgroundColor: colors.warning + '2E' }]}>
+                <Ionicons name="time-outline" size={20} color={colors.warning} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{a.studentName}</Text>
+                <Text style={[styles.rowMeta, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('withDoctor')} {a.facultyName} - {a.appointmentDate}, {a.appointmentTime}
+                </Text>
+              </View>
+              <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.textSecondary} />
             </TouchableOpacity>
-        ))}
+          ))}
+        </DataState>
         <View style={{ height: 110 }} />
       </ScrollView>
       <AdminTabBar activeTab="home" onTabPress={(key) => router.replace(`/admin/${key}` as any)} />

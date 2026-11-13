@@ -4,22 +4,41 @@ import { useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AdminHeader } from '../../components/AdminHeader';
 import { AdminTabBar } from '../../components/AdminTabBar';
+import { DataState } from '../../components/DataState';
 import { useAppSettings } from '../../context/AppSettingsContext';
-import { AppointmentStatus, appointments } from '../../services/adminMockData';
+import { useFetch } from '../../hooks/useFetch';
+import { adminApi, ApiAppointment } from '../../services/adminApi';
 import { commonStyles } from '../../theme/styles';
 
-type Filter = 'all' | AppointmentStatus;
+type Status = 'confirmed' | 'pending' | 'completed' | 'cancelled';
+type Filter = 'all' | 'confirmed' | 'pending' | 'completed';
 const FILTERS: Filter[] = ['all', 'confirmed', 'pending', 'completed'];
+
+// القاعدة: الطالب والدكتور يستخدمون Booked، والأدمن يعرف Pending و Confirmed
+const toStatus = (s: string): Status => {
+  if (s === 'Pending') return 'pending';
+  if (s === 'Completed') return 'completed';
+  if (s === 'Cancelled') return 'cancelled';
+  return 'confirmed'; // Booked أو Confirmed
+};
 
 export default function AdminAppointments() {
   const { colors, t, isRTL } = useAppSettings();
   const [filter, setFilter] = useState<Filter>('all');
 
-  const visible = appointments.filter((a) => filter === 'all' || a.status === filter);
+  const { data, loading, error, reload } = useFetch(async () => {
+    const res = await adminApi.getAppointments();
+    if (!res.success || !res.data) throw new Error(res.message);
+    return res.data;
+  }, [] as ApiAppointment[]);
 
-  const statusStyle = (s: AppointmentStatus) => {
+  const visible = data.filter((a) => filter === 'all' || toStatus(a.status) === filter);
+
+  const statusLabel = (s: Status) => (s === 'cancelled' ? t('notifCancellation') : t(s));
+  const statusStyle = (s: Status) => {
     if (s === 'confirmed') return { bg: colors.successLight, fg: colors.success };
     if (s === 'pending') return { bg: colors.warning + '2E', fg: colors.warning };
+    if (s === 'cancelled') return { bg: colors.dangerLight, fg: colors.danger };
     return { bg: colors.pillBackground, fg: colors.primary };
   };
 
@@ -44,37 +63,37 @@ export default function AdminAppointments() {
           })}
         </View>
 
-        {visible.length === 0 && (
-          <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noAppointments')}</Text>
-        )}
-
-        {visible.map((a) => {
-          const st = statusStyle(a.status);
-          return (
-            <View key={a.id} style={[commonStyles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
-              <View style={[styles.iconBox, { backgroundColor: colors.pillBackground }]}>
-                <Ionicons name={a.format === 'online' ? 'videocam-outline' : 'calendar-outline'} size={24} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.name, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{a.student}</Text>
-                <Text style={[styles.meta, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
-                  {t('withDoctor')} {a.doctor}
-                </Text>
-                <Text style={[styles.meta, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
-                  {a.date} - {a.time}
-                </Text>
-                <View style={[styles.bottomRow, isRTL && { flexDirection: 'row-reverse' }]}>
-                  <Text style={[styles.meta, { color: colors.primary, fontWeight: '600' }]}>
-                    {a.format === 'online' ? t('online') : t('inPerson')}
+        <DataState loading={loading} error={error} empty={visible.length === 0} emptyText={t('noAppointments')} onRetry={reload}>
+          {visible.map((a) => {
+            const status = toStatus(a.status);
+            const st = statusStyle(status);
+            const online = a.appointmentType === 'Online';
+            return (
+              <View key={String(a.appointmentId)} style={[commonStyles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
+                <View style={[styles.iconBox, { backgroundColor: colors.pillBackground }]}>
+                  <Ionicons name={online ? 'videocam-outline' : 'calendar-outline'} size={24} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.name, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{a.studentName}</Text>
+                  <Text style={[styles.meta, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+                    {t('withDoctor')} {a.facultyName}
                   </Text>
-                  <View style={[styles.statusPill, { backgroundColor: st.bg }]}>
-                    <Text style={[styles.statusText, { color: st.fg }]}>{t(a.status)}</Text>
+                  <Text style={[styles.meta, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+                    {a.appointmentDate} - {String(a.appointmentTime ?? '').slice(0, 5)}
+                  </Text>
+                  <View style={[styles.bottomRow, isRTL && { flexDirection: 'row-reverse' }]}>
+                    <Text style={[styles.meta, { color: colors.primary, fontWeight: '600' }]}>
+                      {online ? t('online') : t('inPerson')}
+                    </Text>
+                    <View style={[styles.statusPill, { backgroundColor: st.bg }]}>
+                      <Text style={[styles.statusText, { color: st.fg }]}>{statusLabel(status)}</Text>
+                    </View>
                   </View>
                 </View>
               </View>
-            </View>
-          );
-        })}
+            );
+          })}
+        </DataState>
         <View style={{ height: 110 }} />
       </ScrollView>
       <AdminTabBar activeTab="appointments" onTabPress={(key) => router.replace(`/admin/${key}` as any)} />

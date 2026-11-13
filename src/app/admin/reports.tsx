@@ -3,8 +3,10 @@ import { router } from 'expo-router';
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AdminHeader } from '../../components/AdminHeader';
 import { AdminTabBar } from '../../components/AdminTabBar';
+import { DataState } from '../../components/DataState';
 import { useAppSettings } from '../../context/AppSettingsContext';
-import { appointments, doctorRatings } from '../../services/adminMockData';
+import { useFetch } from '../../hooks/useFetch';
+import { adminApi, ReportRow, ReportsData } from '../../services/adminApi';
 import { commonStyles } from '../../theme/styles';
 
 function Bar({ label, value, total, color, textColor, trackColor, isRTL }: {
@@ -24,10 +26,24 @@ function Bar({ label, value, total, color, textColor, trackColor, isRTL }: {
   );
 }
 
+// يجمع عدد الصفوف اللي اسمها ضمن القائمة (مثلاً Booked + Confirmed)
+const sum = (rows: ReportRow[], ...labels: string[]) =>
+  rows.filter((r) => labels.includes(r.label)).reduce((s, r) => s + Number(r.count), 0);
+
 export default function AdminReports() {
   const { colors, t, isRTL } = useAppSettings();
-  const total = appointments.length;
-  const count = (fn: (a: (typeof appointments)[number]) => boolean) => appointments.filter(fn).length;
+
+  const { data, loading, error, reload } = useFetch(async () => {
+    const res = await adminApi.getReports();
+    if (!res.success || !res.data) throw new Error(res.message);
+    return res.data;
+  }, null as ReportsData | null);
+
+  const total = data?.totalAppointments ?? 0;
+  const byStatus = data?.appointmentsByStatus ?? [];
+  const byType = data?.onlineVsInPerson ?? [];
+  const byConsult = data?.consultationTypes ?? [];
+  const top = data?.topRatedDoctors ?? [];
 
   const card = [styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }];
   const title = [styles.cardTitle, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' } as const];
@@ -38,49 +54,49 @@ export default function AdminReports() {
       <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false}>
         <AdminHeader title={t('reportsTitle')} />
 
-        <View style={[styles.totalCard, { backgroundColor: colors.primary }, isRTL && { flexDirection: 'row-reverse' }]}>
-          <Ionicons name="calendar" size={28} color={colors.accent} />
-          <View>
-            <Text style={[styles.totalNumber, { color: colors.white }]}>{total}</Text>
-            <Text style={{ color: colors.white, opacity: 0.8, fontSize: 13 }}>{t('totalAppointments')}</Text>
-          </View>
-        </View>
-
-        <View style={card}>
-          <Text style={title}>{t('appointmentsByStatus')}</Text>
-          <Bar {...barProps} label={t('confirmed')} value={count((a) => a.status === 'confirmed')} color={colors.success} />
-          <Bar {...barProps} label={t('pending')} value={count((a) => a.status === 'pending')} color={colors.warning} />
-          <Bar {...barProps} label={t('completed')} value={count((a) => a.status === 'completed')} color={colors.accent} />
-        </View>
-
-        <View style={card}>
-          <Text style={title}>{t('appointmentFormat')}</Text>
-          <Bar {...barProps} label={t('online')} value={count((a) => a.format === 'online')} color={colors.primary} />
-          <Bar {...barProps} label={t('inPerson')} value={count((a) => a.format === 'inPerson')} color={colors.accent} />
-        </View>
-
-        <View style={card}>
-          <Text style={title}>{t('consultationTypes')}</Text>
-          <Bar {...barProps} label={t('optQuestions')} value={count((a) => a.consultation === 'questions')} color={colors.accent} />
-          <Bar {...barProps} label={t('optProjectDiscussion')} value={count((a) => a.consultation === 'projectDiscussion')} color={colors.primary} />
-          <Bar {...barProps} label={t('optOther')} value={count((a) => a.consultation === 'other')} color={colors.placeholder} />
-        </View>
-
-        <View style={card}>
-          <Text style={title}>{t('topRatedDoctors')}</Text>
-          {[...doctorRatings].sort((a, b) => b.rating - a.rating).map((d) => (
-            <View key={d.
-              id} style={[styles.docRow, { borderBottomColor: colors.
-                border }, isRTL && { flexDirection: 'row-reverse' }]}>
-              <Text style={[styles.docName, { color: colors.primary }]}>{d.name}</Text>
-              <View style={[styles.ratingBox, isRTL && { flexDirection: 'row-reverse' }]}>
-                <Ionicons name="star" size={16} color={colors.accent} />
-                <Text style={{ color: colors.primary, fontWeight: '700' }}>{d.rating.toFixed(1)}</Text>
-                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>({d.reviews})</Text>
-              </View>
+        <DataState loading={loading} error={error} empty={!data} emptyText={t('noAppointments')} onRetry={reload}>
+          <View style={[styles.totalCard, { backgroundColor: colors.primary }, isRTL && { flexDirection: 'row-reverse' }]}>
+            <Ionicons name="calendar" size={28} color={colors.accent} />
+            <View>
+              <Text style={[styles.totalNumber, { color: colors.white }]}>{total}</Text>
+              <Text style={{ color: colors.white, opacity: 0.8, fontSize: 13 }}>{t('totalAppointments')}</Text>
             </View>
-          ))}
-        </View>
+          </View>
+
+          <View style={card}>
+            <Text style={title}>{t('appointmentsByStatus')}</Text>
+            <Bar {...barProps} label={t('confirmed')} value={sum(byStatus, 'Booked', 'Confirmed')} color={colors.success} />
+            <Bar {...barProps} label={t('pending')} value={sum(byStatus, 'Pending')} color={colors.warning} />
+            <Bar {...barProps} label={t('completed')} value={sum(byStatus, 'Completed')} color={colors.accent} />
+          </View>
+
+          <View style={card}>
+            <Text style={title}>{t('appointmentFormat')}</Text>
+            <Bar {...barProps} label={t('online')} value={sum(byType, 'Online')} color={colors.primary} />
+            <Bar {...barProps} label={t('inPerson')} value={sum(byType, 'In-Person')} color={colors.accent} />
+          </View>
+
+          <View style={card}>
+            <Text style={title}>{t('consultationTypes')}</Text>
+            <Bar {...barProps} label={t('optQuestions')} value={sum(byConsult, 'Questions')} color={colors.accent} />
+            <Bar {...barProps} label={t('optProjectDiscussion')} value={sum(byConsult, 'Project Discussion')} color={colors.primary} />
+            <Bar {...barProps} label={t('optOther')} value={sum(byConsult, 'Other')} color={colors.placeholder} />
+          </View>
+
+          <View style={card}>
+            <Text style={title}>{t('topRatedDoctors')}</Text>
+            {top.map((d) => (
+              <View key={d.facultyId} style={[styles.docRow, { borderBottomColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
+                <Text style={[styles.docName, { color: colors.primary }]}>{d.fullName}</Text>
+                <View style={[styles.ratingBox, isRTL && { flexDirection: 'row-reverse' }]}>
+                  <Ionicons name="star" size={16} color={colors.accent} />
+                  <Text style={{ color: colors.primary, fontWeight: '700' }}>{Number(d.averageRating).toFixed(1)}</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>({d.reviewCount})</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </DataState>
         <View style={{ height: 110 }} />
       </ScrollView>
       <AdminTabBar activeTab="reports" onTabPress={(key) => router.replace(`/admin/${key}` as any)} />
