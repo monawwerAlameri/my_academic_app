@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import {
   SafeAreaView,
   ScrollView,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { FacultyTabBar } from '../../components/FacultyTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { clearSession } from '../../services/session';
 import { commonStyles } from '../../theme/styles';
 
 export default function FacultySettingsScreen() {
@@ -65,7 +66,7 @@ export default function FacultySettingsScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={[commonStyles.menuRow, reverse]} activeOpacity={0.7} onPress={() => router.replace('/login')}>
+        <TouchableOpacity style={[commonStyles.menuRow, reverse]} activeOpacity={0.7} onPress={() => { clearSession(); router.replace('/login'); }}>
           <Ionicons name="log-out-outline" size={20} color={colors.danger} />
           <Text style={[commonStyles.name, { color: colors.danger }]}>{t('logout')}</Text>
         </TouchableOpacity>
@@ -90,3 +91,4 @@ export default function FacultySettingsScreen() {
 const styles = StyleSheet.create({
   watermark: { alignItems: 'center', marginTop: 50, opacity: 0.18 },
 });
+

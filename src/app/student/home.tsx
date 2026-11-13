@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+
 import {
+  ActivityIndicator,
   Alert,
   SafeAreaView,
   ScrollView,
@@ -12,43 +13,53 @@ import {
 } from 'react-native';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { useFetch } from '../../hooks/useFetch';
+import {
+  Booking,
+  NotificationItem,
+  Profile,
+  cancelBooking,
+  getBookings,
+  getNotifications,
+  getProfile,
+} from '../../services/student';
 import { commonStyles } from '../../theme/styles';
 
-const UPCOMING_SESSIONS = [
-  { id: '1', time: '11:00 AM', doctor: 'Dr. Fatimah Abdullah', location: 'Office - Room 203(17D)', type: 'In-person' },
-  { id: '2', time: '9:30 AM', doctor: 'Dr. Najlaa Saleh', location: 'Office - Room 105(CL2)', type: 'In-person' },
-];
+import { errorKey } from '../../services/errors';
+import { canChat, chatStarted, openBookingChat } from '../../utils/chat';
 
-const NOTIFICATIONS = [
-  {
-    id: '1',
-    title: 'Appointment Reminder',
-    date: '17 - 02 - 2026',
-    message:
-      'Hi Nora Alshammari,\nYour appointment with Dr. Reem Khalid (In-person) will start in 30 minutes. Please be on time',
-  },
-];
+
 
 export default function HomeScreen() {
   const { colors, t, isRTL } = useAppSettings();
 
-  const userName = 'Nora';
-  const [sessions, setSessions] = useState(UPCOMING_SESSIONS);
+ const { data: profile } = useFetch<Profile | null>(getProfile, null);
+const { data: bookings, loading: bookingsLoading, error: bookingsError, reload: reloadBookings } =
+  useFetch<Booking[]>(getBookings, []);
+const { data: notifications, loading: notificationsLoading, error: notificationsError, reload: reloadNotifications } =
+  useFetch<NotificationItem[]>(getNotifications, []);
 
-  const cancelSession = (id: string) => {
-    Alert.alert(
-      'Cancel Appointment',
-      'Are you sure you want to cancel this appointment?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: () => setSessions((prev) => prev.filter((s) => s.id !== id)),
-        },
-      ]
-    );
-  };
+const userName = profile?.fullName?.split(' ')[0] ?? '';
+const sessions = bookings.filter((b) => !b.isPast).slice(0, 2);
+const latestNotifications = notifications.slice(0, 1);
+
+const cancelSession = (id: string) => {
+  Alert.alert(t('cancelBookingTitle'), t('cancelBookingMsg'), [
+    { text: t('no'), style: 'cancel' },
+    {
+      text: t('yesCancel'),
+      style: 'destructive',
+      onPress: async () => {
+        try {
+          await cancelBooking(id);
+          reloadBookings();
+        } catch (e) {
+          Alert.alert(t('error'), t(errorKey(e) as any));
+        }
+      },
+    },
+  ]);
+};
 
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
   const reverse = isRTL && { flexDirection: 'row-reverse' as const };
@@ -81,42 +92,70 @@ export default function HomeScreen() {
         <View style={[commonStyles.panel, styles.card, { borderColor: colors.border }]}>
           <Text style={[commonStyles.name, align, { color: colors.primary }]}>{t('upcomingSessions')}</Text>
 
-          {sessions.map((session) => (
-            <View key={session.id} style={[styles.sessionRow, reverse]}>
-              <Text style={[commonStyles.chipText, { color: colors.primary, width: 62 }]}>{session.time}</Text>
 
-              <View style={{ flex: 1 }}>
-                <Text style={[commonStyles.name, align, { color: colors.primary }]}>{session.doctor}</Text>
-                <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>
-                  {session.location} · {session.type}
-                </Text>
-              </View>
+{bookingsLoading ? (
+  <ActivityIndicator style={{ marginVertical: 16 }} color={colors.primary} />
+) : bookingsError ? (
+  <TouchableOpacity activeOpacity={0.7} onPress={reloadBookings}>
+    <Text style={[commonStyles.empty, { color: colors.danger }]}>{t('loadError')}</Text>
+  </TouchableOpacity>
+) : sessions.length === 0 ? (
+  <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noBookings')}</Text>
+) : (
+  sessions.map((session) => (
+    <View key={session.id} style={[styles.sessionRow, reverse]}>
+      <View style={{ flex: 1 }}>
+        <Text style={[commonStyles.name, align, { color: colors.primary }]}>{session.doctor}</Text>
+        <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>
+          {session.location} · {session.datetime}
+        </Text>
+      </View>
 
-              <TouchableOpacity activeOpacity={0.7} onPress={() => cancelSession(session.id)}>
-                <Ionicons name="close" size={20} color={colors.danger} />
-              </TouchableOpacity>
-            </View>
-          ))}
+    {canChat(session) && (
+  <TouchableOpacity activeOpacity={0.7} onPress={() => openBookingChat(session, t)} style={{ opacity: chatStarted(session) ? 1 : 0.4 }}>
+    <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.primary} />
+  </TouchableOpacity>
+)}
 
+      {session.canCancel && (
+      <TouchableOpacity activeOpacity={0.7} onPress={() => cancelSession(session.id)}>
+        <Ionicons name="close" size={20} color={colors.danger} />
+      </TouchableOpacity>
+      )}
+    </View>
+  ))
+)}
           <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/student/my-booking')}>
-            <Text style={[commonStyles.name, { color: colors.primary, textAlign: 'center' }]}>View All</Text>
+            <Text style={[commonStyles.name, { color: colors.primary, textAlign: 'center' }]}>{t('viewAll')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={[commonStyles.panel, styles.card, { borderColor: colors.border }]}>
           <Text style={[commonStyles.name, align, { color: colors.primary }]}>{t('quickNotification')}</Text>
 
-          {NOTIFICATIONS.map((item) => (
-            <View key={item.id} style={[styles.notificationCard, { backgroundColor: colors.cardBackground }]}>
-              <Text style={[commonStyles.name, align, { color: colors.primary }]}>{item.title}</Text>
-              <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>{item.date}</Text>
-              <Text style={[styles.smallText, align, { color: colors.textSecondary, marginTop: 6 }]}>{item.message}</Text>
+         {notificationsLoading ? (
+  <ActivityIndicator style={{ marginVertical: 16 }} color={colors.primary} />
+) : notificationsError ? (
+  <TouchableOpacity activeOpacity={0.7} onPress={reloadNotifications}>
+    <Text style={[commonStyles.empty, { color: colors.danger }]}>{t('loadError')}</Text>
+  </TouchableOpacity>
+) : latestNotifications.length === 0 ? (
+  <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noNotifications')}</Text>
+) : (
+  latestNotifications.map((item) => (
+    <View key={item.id} style={[styles.notificationCard, { backgroundColor: colors.cardBackground }]}>
+      <Text style={[commonStyles.name, align, { color: colors.primary }]}>{t(item.titleKey as any)}</Text>
+      <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>{item.date}</Text>
+      <Text style={[styles.smallText, align, { color: colors.textSecondary, marginTop: 6 }]}>{item.message}</Text>
 
-              <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/student/notifications')}>
-                <Text style={[commonStyles.name, { color: colors.primary, textAlign: 'center', marginTop: 10 }]}>view all</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
+      <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/student/notifications')}>
+        <Text style={[commonStyles.name, { color: colors.primary, textAlign: 'center', marginTop: 10 }]}>{t('viewAllSmall')}</Text>
+      </TouchableOpacity>
+    </View>
+  ))
+)}
+
+
         </View>
 
         <View style={{ height: 90 }} />

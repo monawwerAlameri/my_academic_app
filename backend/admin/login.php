@@ -10,34 +10,27 @@ const OTP_VALID_SECONDS = 600; // 10 minutes, same as the student/faculty codes
 
 // true  = do NOT send an email, return the code in the response (for Postman testing)
 // false = send the real email with PHPMailer. MUST be false in the final version.
-const ADMIN_OTP_DEV_MODE = true;
+const ADMIN_OTP_DEV_MODE = false;
 
-// SMTP settings (do NOT push real passwords to GitHub)
-const SMTP_HOST = 'smtp.gmail.com';
-const SMTP_USER = 'your-email@gmail.com';
-const SMTP_PASS = 'your-app-password';
+// SMTP settings come from backend/config/mail.php (shared with the other modules)
 
 function sendAdminCode(string $toEmail, string $toName, string $code): bool {
-    // PHPMailer: Composer install (vendor/) or the manual copy (PHPMailer/src/)
-    $autoload = __DIR__ . '/../vendor/autoload.php';
-    if (file_exists($autoload)) {
-        require_once $autoload;
-    } else {
-        require_once __DIR__ . '/../PHPMailer/src/Exception.php';
-        require_once __DIR__ . '/../PHPMailer/src/PHPMailer.php';
-        require_once __DIR__ . '/../PHPMailer/src/SMTP.php';
-    }
+    // PHPMailer lives in backend/libs/PHPMailer/src/ (shared with the other modules)
+    require_once __DIR__ . '/../libs/PHPMailer/src/Exception.php';
+    require_once __DIR__ . '/../libs/PHPMailer/src/PHPMailer.php';
+    require_once __DIR__ . '/../libs/PHPMailer/src/SMTP.php';
+    $cfg = require __DIR__ . '/../config/mail.php';
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
-        $mail->Host = SMTP_HOST;
+        $mail->Host = $cfg['host'];
         $mail->SMTPAuth = true;
-        $mail->Username = SMTP_USER;
-        $mail->Password = SMTP_PASS;
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 587;
+        $mail->Username = $cfg['username'];
+        $mail->Password = $cfg['password'];
+        $mail->SMTPSecure = ((int) $cfg['port'] === 465) ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = (int) $cfg['port'];
         $mail->CharSet = 'UTF-8';
-        $mail->setFrom(SMTP_USER, 'Academic Booking');
+        $mail->setFrom($cfg['from_email'], $cfg['from_name']);
         $mail->addAddress($toEmail, $toName);
         $mail->Subject = 'Your admin verification code';
         $mail->Body = "Your verification code is: $code\nIt is valid for 10 minutes.";

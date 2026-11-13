@@ -9,19 +9,39 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { DataState } from '../../components/DataState';
 import { FacultyTabBar } from '../../components/FacultyTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { useFetch } from '../../hooks/useFetch';
+import { FacultyAppointment, FacultyProfile, getFacultyAppointments, getFacultyProfile } from '../../services/doctor';
 import { commonStyles } from '../../theme/styles';
 
-const appointments = [
-  { id: '1', name: 'Deem Omar', time: '11:00 am', typeKey: 'inOffice' as const, appointmentTypeKey: 'optQuestions' as const },
-  { id: '2', name: 'Leen Mohammed', time: '2:00 pm', typeKey: 'online' as const, appointmentTypeKey: 'optProjectDiscussion' as const },
-  { id: '3', name: 'Nora Faisal', time: '12:00 pm', typeKey: 'inOffice' as const, appointmentTypeKey: 'optOther' as const },
-];
+
+const toKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+const addDays = (n: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return toKey(d);
+};
 
 export default function FacultyHome() {
   const { colors, t, isRTL } = useAppSettings();
   const [activeTab, setActiveTab] = useState<'today' | 'week' | 'month'>('today');
+  const { data: profile } = useFetch<FacultyProfile | null>(getFacultyProfile, null);
+  const { data: appts, loading, error, reload } = useFetch<FacultyAppointment[]>(getFacultyAppointments, []);
+
+const today = addDays(0);
+const upcoming = appts.filter((a) => a.status === 'Booked' && a.date >= today);
+const todayCount = upcoming.filter((a) => a.date === today).length;
+const completedWeek = appts.filter(
+  (a) => a.status === 'Completed' && a.date >= addDays(-6) && a.date <= today
+).length;
+const lastDay = activeTab === 'today' ? today : activeTab === 'week' ? addDays(6) : addDays(30);
+const listed = upcoming.filter((a) => a.date <= lastDay);
+const firstName = profile?.fullName?.split(' ')[0] ?? '';
+
 
   const tabs: Array<'today' | 'week' | 'month'> = ['today', 'week', 'month'];
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
@@ -32,7 +52,7 @@ export default function FacultyHome() {
       <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={[commonStyles.headerRow, { justifyContent: 'space-between' }, reverse]}>
           <View>
-            <Text style={[commonStyles.headerTitle, align, { color: colors.primary }]}>{t('welcomeBack')}</Text>
+            <Text style={[commonStyles.headerTitle, align, { color: colors.primary }]}>{t('welcomeDoctor')} {firstName}</Text>
             <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>{t('csDepartment')}</Text>
           </View>
           <TouchableOpacity
@@ -44,22 +64,16 @@ export default function FacultyHome() {
           </TouchableOpacity>
         </View>
 
-        <View style={[{ flexDirection: 'row', gap: 10, marginBottom: 10 }, reverse]}>
-          <View style={[styles.stat, { flex: 1, backgroundColor: colors.cardBackground }]}>
-            <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>5</Text>
-            <Text style={[styles.smallText, { color: colors.textSecondary }]}>{t('todaysAppointments')}</Text>
-          </View>
-          <View style={[styles.stat, { flex: 1, backgroundColor: colors.cardBackground }]}>
-            <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>3</Text>
-            <Text style={[styles.smallText, { color: colors.textSecondary }]}>{t('pendingRequests')}</Text>
-          </View>
-        </View>
-        <View style={[styles.stat, { backgroundColor: colors.cardBackground, marginBottom: 20 }]}>
-          <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>126</Text>
-          <Text style={[styles.smallText, { color: colors.textSecondary }]}>
-            {t('registeredStudents')} · 43 {t('completedThisWeek')}
-          </Text>
-        </View>
+        <View style={[{ flexDirection: 'row', gap: 10, marginBottom: 20 }, reverse]}>
+  <View style={[styles.stat, { flex: 1, backgroundColor: colors.cardBackground }]}>
+    <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>{todayCount}</Text>
+    <Text style={[styles.smallText, { color: colors.textSecondary }]}>{t('todaysAppointments')}</Text>
+  </View>
+  <View style={[styles.stat, { flex: 1, backgroundColor: colors.cardBackground }]}>
+    <Text style={[commonStyles.headerTitle, { color: colors.primary }]}>{completedWeek}</Text>
+    <Text style={[styles.smallText, { color: colors.textSecondary }]}>{t('completedThisWeek')}</Text>
+  </View>
+</View>
 
         <View style={[commonStyles.chipsRow, reverse]}>
           {tabs.map((tab) => {
@@ -81,21 +95,26 @@ export default function FacultyHome() {
 
         <Text style={[commonStyles.name, align, { color: colors.primary, marginBottom: 12 }]}>{t('upcomingSessions')}</Text>
 
-        {appointments.map((appt) => (
-          <View key={appt.id} style={[commonStyles.card, { alignItems: 'center', borderColor: colors.border }, reverse]}>
-            <Ionicons name="person-circle-outline" size={40} color={colors.primary} />
-            <View style={{ flex: 1 }}>
-              <Text style={[commonStyles.name, align, { color: colors.primary }]}>{appt.name}</Text>
-              <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>
-                {appt.time} · {t(appt.typeKey)}
-              </Text>
-              <Text style={[styles.smallText, align, { color: colors.accent }]}>{t(appt.appointmentTypeKey)}</Text>
-            </View>
-            <TouchableOpacity style={[commonStyles.chip, { backgroundColor: colors.successLight, borderColor: colors.successLight }]}>
-              <Text style={[commonStyles.chipText, { color: colors.success }]}>{t('accept')}</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
+            <DataState
+  loading={loading}
+  error={error}
+  empty={listed.length === 0}
+  emptyText={t('noBookings')}
+  onRetry={reload}
+>
+  {listed.map((appt) => (
+    <View key={appt.id} style={[commonStyles.card, { alignItems: 'center', borderColor: colors.border }, reverse]}>
+      <Ionicons name="person-circle-outline" size={40} color={colors.primary} />
+      <View style={{ flex: 1 }}>
+        <Text style={[commonStyles.name, align, { color: colors.primary }]}>{appt.studentName}</Text>
+        <Text style={[styles.smallText, align, { color: colors.textSecondary }]}>
+          {activeTab === 'today' ? appt.time : `${appt.date} · ${appt.time}`} · {appt.isOnline ? t('online') : t('inOffice')}
+        </Text>
+        <Text style={[styles.smallText, align, { color: colors.accent }]}>{t(appt.consultationKey)}</Text>
+      </View>
+    </View>
+  ))}
+</DataState>
 
         <View style={{ height: 90 }} />
       </ScrollView>
