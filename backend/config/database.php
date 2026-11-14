@@ -1,9 +1,9 @@
 <?php
 date_default_timezone_set('Asia/Riyadh');
-$host = "localhost";
-$username = "root";
-$password = "";
-$database = "academic_booking";
+$host = "srv2146.hstgr.io";
+$username = "u920842481_admin";
+$password = "SilAh@2021**";
+$database = "u920842481_academic_book";
 
 $conn = new mysqli($host, $username, $password, $database);
 
