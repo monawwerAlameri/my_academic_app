@@ -15,6 +15,7 @@ requireActiveStudent($conn, $student_id);
 $stmt = $conn->prepare("
     SELECT
         appointment.appointment_id,
+        appointment.faculty_id,
         appointment.appointment_date,
         appointment.appointment_time,
         appointment.appointment_end_time,
