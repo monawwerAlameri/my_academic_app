@@ -7,7 +7,7 @@ require_once __DIR__ . '/../config/faculty_auth.php';
 $faculty_id = requireFacultyAuth($conn);
 
 $stmt = $conn->prepare("
-    SELECT r.review_id, r.student_id,
+    SELECT r.review_id, 
            CASE WHEN r.is_anonymous = 1 THEN 'Anonymous' ELSE s.full_name END AS student_name,
            r.faculty_id, r.rating, r.comment, r.review_date, r.is_anonymous
     FROM review r

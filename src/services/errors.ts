@@ -21,6 +21,7 @@ const KNOWN = [
   'JOIN_FAILED', 'LEAVE_FAILED', 'WAITING_ID_REQUIRED', 'WAITING_NOT_FOUND',
   'MESSAGE_REQUIRED', 'MESSAGE_FAILED', 'FILE_TOO_LARGE', 'INVALID_FILE_TYPE', 'UPLOAD_FAILED',
   'MARK_READ_FAILED', 'PASSWORD_CHANGE_FAILED', 'PHONE_ALREADY_USED', 'PHONE_UPDATE_FAILED',
+    'INVALID_TIME_RANGE', 'LOCATION_TOO_LONG', 'SCHEDULE_OVERLAP',
 ];
 
 export const errorKey = (e: unknown) => {
@@ -53,3 +54,4 @@ export const retrySeconds = (source: unknown): number => {
   const n = Number(d?.retry_after_seconds ?? d?.retryAfterSeconds);
   return Number.isFinite(n) && n > 0 ? n : 0;
 };
+

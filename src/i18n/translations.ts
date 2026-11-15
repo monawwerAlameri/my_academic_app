@@ -366,6 +366,9 @@ export const translations = {
     notifStudentBooked: 'Appointment Booked',
     chatNotStartedTitle: 'Chat not available yet',
     chatNotStartedMsg: 'You can chat with the doctor once your online appointment starts',
+    err_INVALID_TIME_RANGE: 'The start time must be before the end time',
+    err_LOCATION_TOO_LONG: 'Location must be 30 characters or less',
+    err_SCHEDULE_OVERLAP: 'This time overlaps with another time in your schedule',
   },
 
   ar: {
@@ -732,6 +735,9 @@ export const translations = {
     notifStudentBooked: 'تم حجز موعد',
     chatNotStartedTitle: 'المحادثة غير متاحة بعد',
     chatNotStartedMsg: 'تفتح المحادثة مع الدكتور عند بدء موعدك عن بعد',
+    err_INVALID_TIME_RANGE: 'يجب أن يكون وقت البداية قبل وقت النهاية',
+    err_LOCATION_TOO_LONG: 'يجب ألا يتجاوز الموقع 30 حرفاً',
+    err_SCHEDULE_OVERLAP: 'هذا الوقت يتعارض مع وقت آخر في جدولك',
   },
 };
 
