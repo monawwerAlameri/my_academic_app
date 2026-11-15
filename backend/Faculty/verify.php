@@ -1,10 +1,7 @@
 <?php
-// backend/Faculty/verify.php
-// الخطوة الثانية في دخول الدكتور: يتحقق من رمز OTP ثم يُصدر token
-// الطلب: POST {"faculty_id": "F001", "code": "123456"}
 header('Content-Type: application/json');
-require_once DIR . '/../config/database.php';
-require_once DIR . '/../config/token.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/token.php';
 
 $data       = json_decode(file_get_contents("php://input"), true);
 $faculty_id = trim($data['faculty_id'] ?? '');
@@ -33,6 +30,7 @@ if ($faculty['account_status'] !== 'Active') {
 }
 
 $email = strtolower($faculty['email']);
+
 
 $stmt = $conn->prepare("SELECT verification_id, expires_at, is_used FROM verificationcode WHERE email = ? AND code = ? ORDER BY verification_id DESC LIMIT 1");
 $stmt->bind_param("ss", $email, $code);
