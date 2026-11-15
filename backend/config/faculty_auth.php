@@ -1,5 +1,5 @@
 <?php
-require_once DIR . '/auth.php';
+require_once __DIR__ . '/auth.php';
 
 function facultyFail($code, $message = "", $data = null, $conn = null) {
     echo json_encode(["success" => false, "code" => $code, "message" => $message, "data" => $data], JSON_UNESCAPED_UNICODE);

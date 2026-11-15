@@ -71,15 +71,16 @@ export const cancelAllOnDate = async (date: string, reason?: string) =>
     body: JSON.stringify({ faculty_id: await getFacultyId(), appointment_date: date, reason }),
   });
 
-  export const getClosedDates = async (): Promise<string[]> => {
-  const res = await request<{ data: any[] }>('/Faculty/get_closed_dates.php');
+export const getClosedDates = async (): Promise<string[]> => {
+  const fid = await getFacultyId();
+  const res = await request<{ data: any[] }>(`/Faculty/get_closed_dates.php?faculty_id=${encodeURIComponent(fid)}`);
   return (res.data ?? []).map((d) => String(d.closed_date));
 };
 
 export const reopenDate = async (date: string) =>
   request<void>('/Faculty/reopen_date.php', {
     method: 'POST',
-    body: JSON.stringify({ closed_date: date }),
+    body: JSON.stringify({ faculty_id: await getFacultyId(), closed_date: date }),
   });
 
 // ---------- الجدول ----------
@@ -194,14 +195,7 @@ export const updateFacultyProfile = async (p: FacultyProfile) =>
     }),
   });
 
-  export const facultyRegister = (d: {
-  faculty_id: string; full_name: string; email: string;
-  password: string; phone_number: string; office_location: string;
-}) =>
-  request<void>('/Faculty/register.php', {
-    method: 'POST',
-    body: JSON.stringify(d),
-  });
+ 
 
  export const facultyLogin = async (faculty_id: string, password: string) => {
   const res = await request<{ data: { faculty_id: string; email: string; full_name: string } }>('/Faculty/login.php', {

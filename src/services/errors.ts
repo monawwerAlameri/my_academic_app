@@ -26,6 +26,7 @@ const KNOWN = [
 export const errorKey = (e: unknown) => {
   // فشل الاتصال بالسيرفر (الجوال مو على نفس الشبكة، أو XAMPP مطفي، أو الـ IP غلط)
   if (e instanceof TypeError && /network/i.test(e.message)) return 'err_NETWORK';
+    if (e instanceof Error && /^HTTP_\d+$/.test(e.message)) return 'err_SERVER_ERROR';
   const code = e instanceof Error ? e.message : '';
   return KNOWN.includes(code) ? `err_${code}` : 'somethingWentWrong';
 };

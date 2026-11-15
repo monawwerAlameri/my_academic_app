@@ -22,7 +22,14 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
     },
   });
 
-  const json = await res.json();
+    const text = await res.text();
+  let json: any;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new ApiError(res.ok ? 'SERVER_ERROR' : `HTTP_${res.status}`);
+  }
+  
   if (json.success === false) {
     throw new ApiError(json.code ?? json.message ?? 'REQUEST_FAILED', json.data);
   }

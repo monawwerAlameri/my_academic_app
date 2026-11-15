@@ -58,8 +58,12 @@ export interface DoctorReviewItem { reviewId: number | string; reviewerName: str
 export interface DoctorReviewsData extends DoctorRatingSummary { reviews: DoctorReviewItem[] }
 
 async function request<T>(url: string, init?: RequestInit): Promise<ApiResponse<T>> {
-  const res = await fetch(url, { credentials: 'include', ...init });
-  return res.json();
+   const res = await fetch(url, { credentials: 'include', ...init });
+  try {
+    return JSON.parse(await res.text());
+  } catch {
+    return { success: false, message: 'Server error', data: null };
+  }
 }
 
 function post<T>(url: string, body: object) {
