@@ -1,7 +1,13 @@
 <?php
 
 header('Content-Type: application/json');
-session_start();
+
+// Any uncaught error is returned as JSON (not an HTML page), so the app can read it
+set_exception_handler(function ($e) {
+    error_log('Admin error: ' . $e->getMessage()); // see C:\xampp\apache\logs\error.log
+    echo json_encode(['success' => false, 'message' => 'Server error', 'data' => null]);
+});
+require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
 
 if (!isset($_SESSION['admin_id'])) {
