@@ -1,93 +1,41 @@
 <?php
 
 header("Content-Type: application/json");
-
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/faculty_auth.php';
 
-$response = [
-    "success" => false,
-    "message" => "",
-    "data" => null
-];
+$faculty_id = requireFacultyAuth($conn);
 
-$input = json_decode(file_get_contents("php://input"), true);
-
-$facultyId = $input["faculty_id"] ?? "";
+$input           = json_decode(file_get_contents("php://input"), true) ?? [];
 $currentPassword = $input["current_password"] ?? "";
-$newPassword = $input["new_password"] ?? "";
+$newPassword     = $input["new_password"] ?? "";
 
-if (empty($facultyId) || empty($currentPassword) || empty($newPassword)) {
-
-    $response["message"] = "Faculty ID, current password and new password are required";
-
-    echo json_encode($response);
-    exit;
+if ($currentPassword === "" || $newPassword === "") {
+    facultyFail("ALL_FIELDS_REQUIRED", "Current password and new password are required", null, $conn);
 }
 
-// Get faculty password from database
-$sql = "
-    SELECT password
-    FROM facultymember
-    WHERE faculty_id = ?
-";
-
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $facultyId);
+$stmt = $conn->prepare("SELECT password FROM facultymember WHERE faculty_id = ?");
+$stmt->bind_param("s", $faculty_id);
 $stmt->execute();
+$faculty = $stmt->get_result()->fetch_assoc();
+$stmt->close();
 
-$result = $stmt->get_result();
-
-if ($result->num_rows === 0) {
-
-    $response["message"] = "Faculty member not found";
-
-} else {
-
-    $faculty = $result->fetch_assoc();
-
-    // Verify current password
-    if (!password_verify($currentPassword, $faculty["password"])) {
-
-        $response["message"] = "Current password is incorrect";
-
-    } else {
-
-        // Hash new password
-        $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-
-        // Update password in database
-        $updateSql = "
-            UPDATE facultymember
-            SET password = ?
-            WHERE faculty_id = ?
-        ";
-
-        $updateStmt = $conn->prepare($updateSql);
-        $updateStmt->bind_param("ss", $hashedPassword, $facultyId);
-
-        if ($updateStmt->execute()) {
-
-            $response["success"] = true;
-            $response["message"] = "Password changed successfully";
-
-            $response["data"] = [
-                "faculty_id" => $facultyId
-            ];
-
-        } else {
-
-            $response["message"] = "Password update failed";
-
-        }
-
-        $updateStmt->close();
-    }
+if (!$faculty) {
+    facultyFail("FACULTY_NOT_FOUND", "Faculty member not found", null, $conn);
+}
+if (!password_verify($currentPassword, $faculty["password"])) {
+    facultyFail("INVALID_CURRENT_PASSWORD", "Current password is incorrect", null, $conn);
 }
 
-echo json_encode($response);
+$hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+$stmt = $conn->prepare("UPDATE facultymember SET password = ? WHERE faculty_id = ?");
+$stmt->bind_param("ss", $hashedPassword, $faculty_id);
 
-$stmt->close();
+if ($stmt->execute()) {
+    $stmt->close();
+    facultyOk("PASSWORD_CHANGED", ["faculty_id" => $faculty_id], "Password changed successfully");
+} else {
+    $stmt->close();
+    facultyFail("SAVE_FAILED", "Password update failed", null, $conn);
+}
 $conn->close();
-
-?>
-

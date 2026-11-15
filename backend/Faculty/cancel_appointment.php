@@ -1,94 +1,97 @@
 <?php
 header("Content-Type: application/json");
 require_once __DIR__ . '/../config/database.php';
-$response = [
-    "success" => false,
-    "message" => "",
-    "data" => []
-];
+require_once __DIR__ . '/../config/faculty_auth.php';
+require_once __DIR__ . '/../config/waiting_list.php';
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);   
 
-$input = json_decode(file_get_contents("php://input"), true);
-$appointment_id = $input["appointment_id"] ?? "";
-$faculty_id = $input["faculty_id"] ?? "";
-$reason = $input["reason"] ?? "";
+$faculty_id = requireFacultyAuth($conn);
 
-if (empty($appointment_id) || empty($faculty_id)) {
-    $response["message"] = "Appointment ID and Faculty ID are required";
-    echo json_encode($response);
-    exit;
+$input          = json_decode(file_get_contents("php://input"), true) ?? [];
+$appointment_id = (int)($input["appointment_id"] ?? 0);
+$reason         = trim($input["reason"] ?? "");
+
+if ($appointment_id <= 0) {
+    facultyFail("ALL_FIELDS_REQUIRED", "Appointment ID is required", null, $conn);
 }
 
-$sql = "SELECT student_id
-        FROM appointment
-        WHERE appointment_id = ?
-        AND faculty_id = ?
-        AND status = 'Booked'";
-
-$stmt = $conn->prepare($sql);
-$stmt->bind_param(
-    "is",
-    $appointment_id,
-    $faculty_id
-);
+$stmt = $conn->prepare("
+    SELECT a.student_id, a.appointment_date, a.appointment_time, a.appointment_end_time, a.status,
+           f.full_name AS doctor_name
+    FROM appointment a
+    INNER JOIN facultymember f ON a.faculty_id = f.faculty_id
+    WHERE a.appointment_id = ? AND a.faculty_id = ?
+");
+$stmt->bind_param("is", $appointment_id, $faculty_id);
 $stmt->execute();
-$result = $stmt->get_result();
-
-  if ($result->num_rows === 0) {
-    $response["message"] = "Confirmed appointment not found";
-    echo json_encode($response);
-    exit;
-}
-
-$row = $result->fetch_assoc();
-$student_id = $row["student_id"];
+$appointment = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-$sql = "UPDATE appointment
-        SET status = 'Cancelled'
-        WHERE appointment_id = ?
-        AND faculty_id = ?
-        AND status = 'Booked'";
+if (!$appointment) {
+    facultyFail("APPOINTMENT_NOT_FOUND", "Appointment not found", null, $conn);
+}
 
-$stmt = $conn->prepare($sql);
-$stmt->bind_param(
-    "is",
-    $appointment_id,
-    $faculty_id
-);
 
-  if ($stmt->execute() && $stmt->affected_rows > 0) {
+$start_ts = strtotime($appointment['appointment_date'] . ' ' . $appointment['appointment_time']);
+if ($appointment['status'] !== 'Booked' || $start_ts <= time()) {
+    facultyFail("APPOINTMENT_NOT_CANCELLABLE", "Appointment cannot be cancelled", null, $conn);
+}
 
-    $message = "Your appointment has been cancelled by the faculty member.";
+$now          = date("Y-m-d H:i:s");
+$promoted_id  = null;
+$cancelled    = false;
 
-    if (!empty($reason)) {
-        $message .= " Reason: " . $reason;
+$conn->begin_transaction();
+try {
+    $lock = $conn->prepare("SELECT faculty_id FROM facultymember WHERE faculty_id = ? FOR UPDATE");
+    $lock->bind_param("s", $faculty_id);
+    $lock->execute();
+    $lock->get_result();
+    $lock->close();
+
+    $stmt = $conn->prepare("UPDATE appointment SET status = 'Cancelled' WHERE appointment_id = ? AND faculty_id = ? AND status = 'Booked'");
+    $stmt->bind_param("is", $appointment_id, $faculty_id);
+    $stmt->execute();
+    $cancelled = ($stmt->affected_rows > 0);
+    $stmt->close();
+
+    if ($cancelled) {
+        // H2: نفس صيغة باقي الإشعارات حتى تظهر شارة «ألغاه الدكتور» واسم الدكتور والتاريخ
+        $type    = "Cancellation";
+        $message = json_encode([
+            "doctor" => $appointment['doctor_name'],
+            "date"   => $appointment['appointment_date'],
+            "time"   => $appointment['appointment_time'],
+            "by"     => "faculty",
+            "reason" => $reason,
+        ], JSON_UNESCAPED_UNICODE);
+
+        $stmt = $conn->prepare("INSERT INTO notification (user_id, notification_type, message, notification_time, appointment_id) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssi", $appointment['student_id'], $type, $message, $now, $appointment_id);
+        $stmt->execute();
+        $stmt->close();
+
+       
+        $promoted_id = promoteFirstFromWaitingList(
+            $conn, $faculty_id,
+            $appointment['appointment_date'], $appointment['appointment_time'], $appointment['appointment_end_time'],
+            $appointment['doctor_name'], $now
+        );
+        $conn->commit();
+    } else {
+        $conn->rollback();   
     }
-    $notification_type = "Cancellation";
-    $notification_time = date("Y-m-d H:i:s");
-    $notification_sql = "INSERT INTO notification
-        (user_id, notification_type, message, notification_time, appointment_id)
-        VALUES (?, ?, ?, ?, ?)";
-    $notification_stmt = $conn->prepare($notification_sql);
-    $notification_stmt->bind_param(
-        "ssssi",
-        $student_id,
-        $notification_type,
-        $message,
-        $notification_time,
-        $appointment_id
-    );
-
-    $notification_stmt->execute();
-    $notification_stmt->close();
-    $response["success"] = true;
-    $response["message"] = "Appointment cancelled successfully";
-
-} 
-   else {
-
-    $response["message"] = "Failed to cancel appointment";
+} catch (Throwable $e) {
+    $conn->rollback();
+    facultyFail("CANCEL_FAILED", "Failed to cancel appointment", null, $conn);
 }
-echo json_encode($response);
-$stmt->close();
+
+if (!$cancelled) {
+    facultyFail("APPOINTMENT_NOT_CANCELLABLE", "Appointment cannot be cancelled", null, $conn);
+}
+
+facultyOk("APPOINTMENT_CANCELLED", [
+    "appointment_id"          => $appointment_id,
+    "promoted_appointment_id" => $promoted_id
+], "Appointment cancelled successfully");
 $conn->close();
-?>

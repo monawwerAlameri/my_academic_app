@@ -1,43 +1,25 @@
 <?php
+
 header("Content-Type: application/json");
 require_once __DIR__ . '/../config/database.php';
-$response = [
-    "success" => false,
-    "message" => "",
-    "data" => null
-];
+require_once __DIR__ . '/../config/faculty_auth.php';
 
-$facultyId = $_GET["faculty_id"] ?? "";
-  if (empty($facultyId)) 
-    {
-    $response["message"] = "faculty_id is required";
-    echo json_encode($response);
-    exit;
-}
+$faculty_id = requireFacultyAuth($conn);
 
-$sql = "
-    SELECT
-        waiting_id,
-        student_id,
-        faculty_id,
-        requested_time,
-        queue_position
+$stmt = $conn->prepare("
+    SELECT waiting_id, student_id, faculty_id, requested_time, queue_position
     FROM waitinglist
     WHERE faculty_id = ?
     ORDER BY queue_position ASC
-";
-
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $facultyId);
+");
+$stmt->bind_param("s", $faculty_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $waitingList = [];
-
- while ($row = $result->fetch_assoc()) {
+while ($row = $result->fetch_assoc()) {
     $waitingList[] = $row;
 }
-$response["success"] = true;
-$response["message"] = "Waiting list retrieved successfully";
-$response["data"] = $waitingList;
-echo json_encode($response);
-?>
+$stmt->close();
+
+facultyOk("WAITING_LIST_RETRIEVED", $waitingList, "Waiting list retrieved successfully");
+$conn->close();

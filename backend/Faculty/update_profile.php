@@ -1,65 +1,35 @@
 <?php
+
 header("Content-Type: application/json");
 require_once __DIR__ . '/../config/database.php';
-$response = [
-    "success" => false,
-    "message" => "",
-    "data" => null
-];
-$input = json_decode(file_get_contents("php://input"), true);
-$facultyId = $input["faculty_id"] ?? "";
-$fullName = $input["full_name"] ?? "";
-$email = $input["email"] ?? "";
-$phoneNumber = $input["phone_number"] ?? "";
-$officeLocation = $input["office_location"] ?? "";
-if (
-    empty($facultyId) ||
-    empty($fullName) ||
-    empty($email) ||
-    empty($phoneNumber) ||
-    empty($officeLocation)
-) {
+require_once __DIR__ . '/../config/faculty_auth.php';
 
-    $response["message"] = "All fields are required";
-    echo json_encode($response);
-    exit;
+$faculty_id = requireFacultyAuth($conn);
+
+$input          = json_decode(file_get_contents("php://input"), true) ?? [];
+$fullName       = trim($input["full_name"] ?? "");
+$email          = trim($input["email"] ?? "");
+$phoneNumber    = trim($input["phone_number"] ?? "");
+$officeLocation = trim($input["office_location"] ?? "");
+
+if ($fullName === "" || $email === "" || $phoneNumber === "" || $officeLocation === "") {
+    facultyFail("ALL_FIELDS_REQUIRED", "All fields are required", null, $conn);
 }
 
-$sql = "
-    UPDATE facultymember
-    SET
-        full_name = ?,
-        email = ?,
-        phone_number = ?,
-        office_location = ?
-    WHERE faculty_id = ?
-";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param(
-    "sssss",
-    $fullName,
-    $email,
-    $phoneNumber,
-    $officeLocation,
-    $facultyId
-);
+$stmt = $conn->prepare("UPDATE facultymember SET full_name = ?, email = ?, phone_number = ?, office_location = ? WHERE faculty_id = ?");
+$stmt->bind_param("sssss", $fullName, $email, $phoneNumber, $officeLocation, $faculty_id);
 
-  if ($stmt->execute()) {
-
-    $response["success"] = true;
-    $response["message"] = "Faculty profile updated successfully";
-    $response["data"] = [
-        "faculty_id" => $facultyId,
-        "full_name" => $fullName,
-        "email" => $email,
-        "phone_number" => $phoneNumber,
+if ($stmt->execute()) {
+    $stmt->close();
+    facultyOk("PROFILE_UPDATED", [
+        "faculty_id"      => $faculty_id,
+        "full_name"       => $fullName,
+        "email"           => $email,
+        "phone_number"    => $phoneNumber,
         "office_location" => $officeLocation
-    ];
-
-} 
-  else {
-
-    $response["message"] = "Failed to update faculty profile";
+    ], "Faculty profile updated successfully");
+} else {
+    $stmt->close();
+    facultyFail("SAVE_FAILED", "Failed to update faculty profile", null, $conn);
 }
-echo json_encode($response);
-?>
+$conn->close();
