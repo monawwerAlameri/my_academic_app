@@ -1,3 +1,4 @@
+import { riyadhMs } from '../utils/time';
 import { request } from './api';
 import { fromApiTime } from './doctor';
 import { getStudentId } from './session';
@@ -37,7 +38,7 @@ export interface Booking {
 }
 
   const toBooking = (a: any, isPast: boolean, ids: Record<string, string>): Booking => {
-  const start = new Date(`${a.appointment_date}T${a.appointment_time}`);
+  const start = new Date(riyadhMs(a.appointment_date, a.appointment_time));
   return {
     id: String(a.appointment_id),
     doctor: a.doctor_name ?? '',
@@ -124,6 +125,7 @@ export interface Slot {
   date: string;
   start: string;
   end: string;
+  location: string;
 }
 export interface DaySchedule { id: string; date: string; dayKey: string; slots: Slot[]; }
 
@@ -146,7 +148,8 @@ export const getDoctorSchedule = async (doctorId: string, type: string): Promise
       date: r.appointment_date,
       start: r.appointment_time,
       end: r.appointment_end_time,
-    });
+      location: r.location ?? '',
+      });
   });
   return Array.from(days.values());
 };
@@ -168,7 +171,7 @@ export const getWaitlist = async (): Promise<WaitingItem[]> => {
     doctor: w.doctor_name ?? '',
     type: w.appointment_type ?? '',
     subtype: w.consultation_type ?? '',
-    time: `${clockOf(w.requested_time)} - ${clockOf(w.requested_end_time)}`,
+    time: String(w.requested_time ?? '').slice(0, 10) + ' - ' + clockOf(w.requested_time) + ' - ' + clockOf(w.requested_end_time),
     aheadOfYou: Number(w.ahead_of_you ?? 0),
   }));
 };

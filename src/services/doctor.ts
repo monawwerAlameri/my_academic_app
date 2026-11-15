@@ -71,6 +71,17 @@ export const cancelAllOnDate = async (date: string, reason?: string) =>
     body: JSON.stringify({ faculty_id: await getFacultyId(), appointment_date: date, reason }),
   });
 
+  export const getClosedDates = async (): Promise<string[]> => {
+  const res = await request<{ data: any[] }>('/Faculty/get_closed_dates.php');
+  return (res.data ?? []).map((d) => String(d.closed_date));
+};
+
+export const reopenDate = async (date: string) =>
+  request<void>('/Faculty/reopen_date.php', {
+    method: 'POST',
+    body: JSON.stringify({ closed_date: date }),
+  });
+
 // ---------- الجدول ----------
 export interface ScheduleSlot {
   id: string;
@@ -193,9 +204,17 @@ export const updateFacultyProfile = async (p: FacultyProfile) =>
   });
 
  export const facultyLogin = async (faculty_id: string, password: string) => {
-  const res = await request<{ data: { email: string; full_name: string } }>('/Faculty/login.php', {
+  const res = await request<{ data: { faculty_id: string; email: string; full_name: string } }>('/Faculty/login.php', {
     method: 'POST',
     body: JSON.stringify({ faculty_id, password }),
+  });
+  return res.data;
+};
+
+export const facultyVerify = async (faculty_id: string, code: string) => {
+  const res = await request<{ data: { faculty_id: string; full_name: string; token: string } }>('/Faculty/verify.php', {
+    method: 'POST',
+    body: JSON.stringify({ faculty_id, code }),
   });
   return res.data;
 };

@@ -13,9 +13,9 @@ import {
 } from 'react-native';
 import { useAppSettings } from '../context/AppSettingsContext';
 import { adminApi } from '../services/adminApi';
-import { facultyLogin } from '../services/doctor';
+import { facultyLogin, facultyVerify } from '../services/doctor';
 import { adminErrorKey, errorKey, retrySeconds } from '../services/errors';
-import { setFacultyId, setStudentId } from '../services/session';
+import { setFacultyId, setFacultyToken, setStudentId } from '../services/session';
 import { studentLogin, studentVerify } from '../services/student';
 import { commonStyles } from '../theme/styles';
 
@@ -73,6 +73,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [studentEmail, setStudentEmail] = useState('');
+  const [facultyIdFromServer, setFacultyIdFromServer] = useState('');
   const [loading, setLoading] = useState(false);
   const lock = useCountdown();
 
@@ -80,8 +81,7 @@ export default function LoginScreen() {
   const reverse = isRTL && { flexDirection: 'row-reverse' as const };
 
   const { role, id } = detectRole(username);
-  // الدكتورة حالياً بدون رمز تحقق (Faculty/login.php ما فيه OTP). إذا أضافوه نغيّر هنا.
-  const needsCode = role !== 'faculty';
+  const needsCode = true;
 
   const resetCodeStep = () => {
     setCodeSent(false);
@@ -119,6 +119,9 @@ export default function LoginScreen() {
         const d = await studentLogin(id, password);
         if (!d?.email) throw new Error('REQUEST_FAILED');
         setStudentEmail(d.email);
+      } else if (role === 'faculty') {
+        const d = await facultyLogin(id, password);
+        setFacultyIdFromServer(d?.faculty_id ?? id);
       } else {
         const res = await adminApi.login(id, password);
         if (!res.success) {
@@ -161,8 +164,9 @@ export default function LoginScreen() {
         setStudentId(id);
         router.replace('/student/home');
       } else if (role === 'faculty') {
-        const res: any = await facultyLogin(id, password);
-        setFacultyId(res?.data?.faculty_id ?? id);
+        const d = await facultyVerify(facultyIdFromServer || id, code);
+        setFacultyId(d.faculty_id);
+        setFacultyToken(d.token);
         router.replace('/faculty/home');
       } else {
         const res = await adminApi.verifyLogin(code);

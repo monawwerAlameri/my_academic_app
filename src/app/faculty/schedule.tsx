@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -17,7 +17,7 @@ import { DataState } from '../../components/DataState';
 import { FacultyTabBar } from '../../components/FacultyTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { useFetch } from '../../hooks/useFetch';
-import { DayKey, ScheduleSlot, addSlot, cancelAllOnDate, deleteSlot, getSchedule, toApiTime } from '../../services/doctor';
+import { DayKey, ScheduleSlot, addSlot, cancelAllOnDate, deleteSlot, getClosedDates, getSchedule, toApiTime } from '../../services/doctor';
 import { errorKey } from '../../services/errors';
 import { commonStyles } from '../../theme/styles';
 
@@ -84,6 +84,19 @@ const [closedDays, setClosedDays] = useState<Record<DayKey, boolean>>({
 });
 const [busy, setBusy] = useState(false);
 const { data: allSlots, loading, error, reload } = useFetch<ScheduleSlot[]>(getSchedule, []);
+// الأيام المغلقة من السيرفر (حتى لا تضيع بعد إعادة التحميل)
+  const loadClosed = async () => {
+    try {
+      const dates = await getClosedDates();
+      const next: Record<DayKey, boolean> = {
+        sunday: false, monday: false, tuesday: false, wednesday: false, thursday: false,
+      };
+      days.forEach((d) => { next[d.key] = dates.includes(nextDateOf(d.key)); });
+      setClosedDays(next);
+    } catch {}
+  };
+
+  useEffect(() => { loadClosed(); }, []);
 
   // Add-slot modal state
   const [addModalVisible, setAddModalVisible] = useState(false);
@@ -97,7 +110,8 @@ const { data: allSlots, loading, error, reload } = useFetch<ScheduleSlot[]>(getS
   const [closeModalVisible, setCloseModalVisible] = useState(false);
   const [closeReason, setCloseReason] = useState('');
 
-const slots = allSlots.filter((s) => s.day === selectedDay);  const align = { textAlign: isRTL ? 'right' : 'left' } as const;
+const slots = allSlots.filter((s) => s.day === selectedDay);
+  const align = { textAlign: isRTL ? 'right' : 'left' } as const;
   const reverse = isRTL && { flexDirection: 'row-reverse' as const };
 
   const chipStyle = (active: boolean) => [

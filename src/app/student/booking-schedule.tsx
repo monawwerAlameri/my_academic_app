@@ -47,7 +47,7 @@ const { data: schedule, loading: scheduleLoading, error: scheduleError, reload: 
       subtype,
       doctorId: doctor.id,
       doctor: doctor.name,
-      location: doctor.office ?? '',
+      location: slot.location || doctor.office || '',
       date: slot.date,
       start: slot.start,
       end: slot.end,
