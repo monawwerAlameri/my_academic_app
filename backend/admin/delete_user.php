@@ -1,8 +1,13 @@
 <?php
 
-
 header('Content-Type: application/json');
-session_start();
+
+// Any uncaught error is returned as JSON (not an HTML page), so the app can read it
+set_exception_handler(function ($e) {
+    error_log('Admin error: ' . $e->getMessage()); // see C:\xampp\apache\logs\error.log
+    echo json_encode(['success' => false, 'message' => 'Server error', 'data' => null]);
+});
+require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/waiting_list_helper.php';
 
@@ -70,8 +75,15 @@ try {
         exit;
     }
 
+    // Remove the user's login tokens too
+    $tokenRole = ($role === 'Student') ? 'student' : 'faculty';
+    $stmt = $conn->prepare("DELETE FROM auth_token WHERE user_id = ? AND role = ?");
+    $stmt->bind_param('ss', $userId, $tokenRole);
+    $stmt->execute();
+    $stmt->close();
+
     $conn->commit();
-} catch (Exception $e) {
+} catch (Throwable $e) {
     $conn->rollback();
     echo json_encode([
         'success' => false,

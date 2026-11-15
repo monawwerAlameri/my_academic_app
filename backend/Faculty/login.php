@@ -1,10 +1,11 @@
 <?php
+
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/mailer.php';
 header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents("php://input"), true);
-$faculty_id = $data['faculty_id'] ?? '';
+$faculty_id = trim($data['faculty_id'] ?? '');
 $password   = $data['password'] ?? '';
 
 if (empty($faculty_id) || empty($password)) {
@@ -12,7 +13,7 @@ if (empty($faculty_id) || empty($password)) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT password, email, full_name, account_status FROM facultymember WHERE faculty_id = ?");
+$stmt = $conn->prepare("SELECT faculty_id, password, email, full_name, account_status FROM facultymember WHERE faculty_id = ?");
 $stmt->bind_param("s", $faculty_id);
 $stmt->execute();
 $faculty = $stmt->get_result()->fetch_assoc();
@@ -46,8 +47,12 @@ if ($stmt->execute() && sendOtpEmail($email, $code)) {
     echo json_encode([
         "success" => true,
         "code" => "OTP_GENERATED",
-        "data" => ["email" => $email, "full_name" => $faculty['full_name']]
-    ]);
+        "data" => [
+            "faculty_id" => $faculty['faculty_id'],
+            "email"      => $email,
+            "full_name"  => $faculty['full_name']
+        ]
+    ], JSON_UNESCAPED_UNICODE);
 } else {
     echo json_encode(["success" => false, "code" => "OTP_SEND_FAILED"]);
 }

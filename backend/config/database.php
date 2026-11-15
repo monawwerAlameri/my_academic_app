@@ -2,7 +2,7 @@
 date_default_timezone_set('Asia/Riyadh');
 $host = "srv2146.hstgr.io";
 $username = "u920842481_admin";
-$password = "SilAh@2021**";
+$password = (require __DIR__ . '/secret.php')['db_password'];
 $database = "u920842481_academic_book";
 
 try {

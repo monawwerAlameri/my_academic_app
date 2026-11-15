@@ -1,8 +1,13 @@
 <?php
 
-
 header('Content-Type: application/json');
-session_start();
+
+// Any uncaught error is returned as JSON (not an HTML page), so the app can read it
+set_exception_handler(function ($e) {
+    error_log('Admin error: ' . $e->getMessage()); // see C:\xampp\apache\logs\error.log
+    echo json_encode(['success' => false, 'message' => 'Server error', 'data' => null]);
+});
+require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
 
 if (!isset($_SESSION['admin_id'])) {
@@ -15,10 +20,14 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 $statusFilter = trim($_GET['status'] ?? '');
-$allowedStatuses = ['Pending', 'Confirmed', 'Cancelled', 'Completed'];
+// The old filters Pending / Confirmed now mean Booked
+if ($statusFilter === 'Pending' || $statusFilter === 'Confirmed') {
+    $statusFilter = 'Booked';
+}
+$allowedStatuses = ['Booked', 'Cancelled', 'Completed'];
 
 $sql = "SELECT
-            a.appointment_id, a.appointment_date, a.appointment_time,
+            a.appointment_id, a.appointment_date, a.appointment_time, a.appointment_end_time,
             a.appointment_type, a.consultation_type, a.status, a.location,
             s.student_id, s.full_name AS student_name,
             f.faculty_id, f.full_name AS faculty_name
@@ -50,6 +59,7 @@ while ($row = $result->fetch_assoc()) {
         'facultyName' => $row['faculty_name'],
         'appointmentDate' => $row['appointment_date'],
         'appointmentTime' => $row['appointment_time'],
+        'appointmentEndTime' => $row['appointment_end_time'],
         'appointmentType' => $row['appointment_type'],
         'consultationType' => $row['consultation_type'],
         'status' => $row['status'],

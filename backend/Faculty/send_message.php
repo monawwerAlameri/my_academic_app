@@ -1,122 +1,53 @@
 <?php
 
 header("Content-Type: application/json");
-
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/faculty_auth.php';
 
-$response = [
-    "success" => false,
-    "message" => "",
-    "data" => null
-];
+$faculty_id = requireFacultyAuth($conn);
 
-$input = json_decode(file_get_contents("php://input"), true);
-
-$facultyId = $input["faculty_id"] ?? "";
-$studentId = $input["student_id"] ?? "";
+$input       = json_decode(file_get_contents("php://input"), true) ?? [];
+$studentId   = trim($input["student_id"] ?? "");
 $messageText = trim($input["message_text"] ?? "");
 
-if (
-    empty($facultyId) ||
-    empty($studentId) ||
-    empty($messageText)
-) {
-
-    $response["message"] = "faculty_id, student_id and message_text are required";
-
-    echo json_encode($response);
-    exit;
+if ($studentId === "" || $messageText === "") {
+    facultyFail("ALL_FIELDS_REQUIRED", "student_id and message_text are required", null, $conn);
 }
 
-// Check that faculty and student exist
 
-$checkSql = "
-    SELECT
-        (SELECT COUNT(*) FROM facultymember WHERE faculty_id = ?) AS faculty_exists,
-        (SELECT COUNT(*) FROM student WHERE student_id = ?) AS student_exists
-";
+$stmt = $conn->prepare("SELECT student_id FROM student WHERE student_id = ?");
+$stmt->bind_param("s", $studentId);
+$stmt->execute();
+$studentExists = ($stmt->get_result()->num_rows > 0);
+$stmt->close();
 
-$checkStmt = $conn->prepare($checkSql);
-
-$checkStmt->bind_param(
-    "ss",
-    $facultyId,
-    $studentId
-);
-
-$checkStmt->execute();
-
-$checkResult = $checkStmt->get_result();
-
-$checkData = $checkResult->fetch_assoc();
-
-$checkStmt->close();
-
-if (
-    $checkData["faculty_exists"] == 0 ||
-    $checkData["student_exists"] == 0
-) {
-
-    $response["message"] = "Faculty member or student not found";
-
-    echo json_encode($response);
-    exit;
+if (!$studentExists) {
+    facultyFail("STUDENT_NOT_FOUND", "Student not found", null, $conn);
 }
-
-// Insert faculty message
 
 $senderType = "Faculty";
-$sentAt = date("Y-m-d H:i:s");
+$sentAt     = date("Y-m-d H:i:s");
 
-$sql = "
-    INSERT INTO message
-    (
-        student_id,
-        faculty_id,
-        sender_type,
-        message_text,
-        sent_at,
-        is_read
-    )
+$stmt = $conn->prepare("
+    INSERT INTO message (student_id, faculty_id, sender_type, message_text, sent_at, is_read)
     VALUES (?, ?, ?, ?, ?, 0)
-";
-
-$stmt = $conn->prepare($sql);
-
-$stmt->bind_param(
-    "sssss",
-    $studentId,
-    $facultyId,
-    $senderType,
-    $messageText,
-    $sentAt
-);
+");
+$stmt->bind_param("sssss", $studentId, $faculty_id, $senderType, $messageText, $sentAt);
 
 if ($stmt->execute()) {
-
-    $response["success"] = true;
-
-    $response["message"] = "Message sent successfully";
-
-    $response["data"] = [
-        "message_id" => $stmt->insert_id,
-        "student_id" => $studentId,
-        "faculty_id" => $facultyId,
-        "sender_type" => $senderType,
+    $newId = $stmt->insert_id;
+    $stmt->close();
+    facultyOk("MESSAGE_SENT", [
+        "message_id"   => $newId,
+        "student_id"   => $studentId,
+        "faculty_id"   => $faculty_id,
+        "sender_type"  => $senderType,
         "message_text" => $messageText,
-        "sent_at" => $sentAt,
-        "is_read" => 0
-    ];
-
+        "sent_at"      => $sentAt,
+        "is_read"      => 0
+    ], "Message sent successfully");
 } else {
-
-    $response["message"] = "Failed to send message";
-
+    $stmt->close();
+    facultyFail("SAVE_FAILED", "Failed to send message", null, $conn);
 }
-
-echo json_encode($response);
-
-$stmt->close();
 $conn->close();
-
-?>
