@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
 // Waiting lists of appointment times that already started are removed
 $clean_now = date("Y-m-d H:i:s");
@@ -25,6 +26,7 @@ if (
     echo json_encode(["success" => false, "code" => "ALL_FIELDS_REQUIRED"]);
     exit;
 }
+requireActiveStudent($conn, $student_id); 
 
 if ($appointment_type !== 'In-Person' && $appointment_type !== 'Online') {
     echo json_encode(["success" => false, "code" => "INVALID_APPOINTMENT_TYPE"]);
@@ -73,6 +75,7 @@ if (!$faculty) {
     $conn->close();
     exit;
 }
+requireActiveFaculty($conn, $faculty_id);
 
 // Booking window: today until 30 days ahead, and the slot must not have started
 $today    = date('Y-m-d');
@@ -135,12 +138,34 @@ $student_message   = json_encode(["doctor" => $faculty['full_name'], "appointmen
 $conn->begin_transaction();
 
 try {
-    // Lock the faculty row so queue positions and bookings stay consistent
-    $lockStmt = $conn->prepare("SELECT faculty_id FROM facultymember WHERE faculty_id = ? FOR UPDATE");
+        // Lock the faculty row so two students cannot book the same time together
+    $lockStmt = $conn->prepare("SELECT account_status FROM facultymember WHERE faculty_id = ? FOR UPDATE");
     $lockStmt->bind_param("s", $faculty_id);
     $lockStmt->execute();
-    $lockStmt->get_result();
+    $lockedFaculty = $lockStmt->get_result()->fetch_assoc();
     $lockStmt->close();
+
+    // After the lock: the doctor must still be Active
+    if (!$lockedFaculty || $lockedFaculty['account_status'] !== 'Active') {
+        $conn->rollback();
+        echo json_encode(["success" => false, "code" => "FACULTY_NOT_ACTIVE"]);
+        $conn->close();
+        exit;
+    }
+
+    // After the lock: the date must still be open
+    $closedAfterLockStmt = $conn->prepare("SELECT closed_id FROM closed_date WHERE faculty_id = ? AND closed_date = ?");
+    $closedAfterLockStmt->bind_param("ss", $faculty_id, $appointment_date);
+    $closedAfterLockStmt->execute();
+    $closedAfterLock = $closedAfterLockStmt->get_result()->num_rows;
+    $closedAfterLockStmt->close();
+
+    if ($closedAfterLock > 0) {
+        $conn->rollback();
+        echo json_encode(["success" => false, "code" => "DAY_CLOSED"]);
+        $conn->close();
+        exit;
+    }
 
     // The slot must be full (a Booked appointment overlaps it)
     $fullStmt = $conn->prepare("

@@ -1,47 +1,46 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { FacultyTabBar } from '../../components/FacultyTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { commonStyles } from '../../theme/styles';
+import { DataState } from '../../components/DataState';
+import { useFetch } from '../../hooks/useFetch';
+import { FacultyAppointment, cancelFacultyAppointment, getFacultyAppointments } from '../../services/doctor';
+import { errorKey } from '../../services/errors';
+
 
 type ListTab = 'previous' | 'upcoming';
 
-interface Booking {
-  id: string;
-  title: string;
-  studentName: string;
-  datetime: string;
-  isPast: boolean;
-}
 
-const BOOKINGS: Booking[] = [
-  { id: '1', title: 'In-Person Appointment-Questions', studentName: 'Fatimah Abdullah', datetime: '3May 2026 - 11:00 AM', isPast: false },
-  { id: '2', title: 'In-Person Appointment-Other', studentName: 'Najlaa Saleh', datetime: '15May 2026 - 9:30 AM', isPast: false },
-  { id: '3', title: 'Online Appointment-Project Discussion', studentName: 'Reem Khalid', datetime: '10Feb 2026 - 1:00 PM', isPast: true },
-];
 
 export default function FacultyBookingsScreen() {
-  const { colors, t, isRTL, language } = useAppSettings();
+  const { colors, t, isRTL } = useAppSettings();
   const [tab, setTab] = useState<ListTab>('upcoming');
-  const [bookings, setBookings] = useState<Booking[]>(BOOKINGS);
+  const [cancelTarget, setCancelTarget] = useState<FacultyAppointment | null>(null);
+  const [reason, setReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+const { data: bookings, loading, error, reload } = useFetch<FacultyAppointment[]>(getFacultyAppointments, []);
 
-  const confirmCancel = (booking: Booking) => {
-    const isAr = language === 'ar';
-    Alert.alert(
-      isAr ? 'إلغاء الحجز' : 'Cancel Booking',
-      isAr ? 'هل أنت متأكد من إلغاء هذا الموعد؟' : 'Are you sure you want to cancel this appointment?',
-      [
-        { text: isAr ? 'لا' : 'No', style: 'cancel' },
-        {
-          text: isAr ? 'نعم' : 'Yes',
-          style: 'destructive',
-          onPress: () => setBookings((prev) => prev.filter((b) => b.id !== booking.id)),
-        },
-      ]
-    );
-  };
+const confirmCancel = (booking: FacultyAppointment) => {
+  setReason('');
+  setCancelTarget(booking);
+};
+
+const doCancel = async () => {
+  if (!cancelTarget || cancelling) return;
+  setCancelling(true);
+  try {
+    await cancelFacultyAppointment(cancelTarget.id, reason.trim() || undefined);
+    setCancelTarget(null);
+    reload();
+  } catch (e) {
+    Alert.alert(t('error'), t(errorKey(e) as any));
+  } finally {
+    setCancelling(false);
+  }
+};
 
   const filtered = bookings.filter((b) => (tab === 'upcoming' ? !b.isPast : b.isPast));
 
@@ -61,25 +60,69 @@ export default function FacultyBookingsScreen() {
         </View>
 
         <View style={[commonStyles.panel, { borderColor: colors.border }]}>
-          {filtered.length === 0 ? (
-            <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noBookings')}</Text>
-          ) : (
-            filtered.map((booking, index) => (
-              <BookingRow
-                key={booking.id}
-                booking={booking}
-                isLast={index === filtered.length - 1}
-                onCancel={() => confirmCancel(booking)}
-                colors={colors}
-                isRTL={isRTL}
-              />
-            ))
-          )}
+         <DataState
+  loading={loading}
+  error={error}
+  empty={filtered.length === 0}
+  emptyText={t('noBookings')}
+  onRetry={reload}
+>
+  {filtered.map((booking, index) => (
+    <BookingRow
+      key={booking.id}
+      booking={booking}
+      title={`${booking.isOnline ? t('onlineAppointment') : t('inPersonAppointment')} - ${t(booking.consultationKey)}`}
+      isLast={index === filtered.length - 1}
+      onCancel={() => confirmCancel(booking)}
+      colors={colors}
+      isRTL={isRTL}
+    />
+  ))}
+</DataState>
         </View>
 
         <View style={{ height: 90 }} />
       </ScrollView>
 
+
+
+<Modal visible={!!cancelTarget} transparent animationType="fade">
+  <View style={styles.overlay}>
+    <View style={[commonStyles.panel, { width: '100%', padding: 20, backgroundColor: colors.background, borderColor: colors.border }]}>
+      <Text style={[commonStyles.name, { color: colors.primary, marginBottom: 8 }]}>{t('cancelBookingTitle')}</Text>
+      <Text style={[commonStyles.paragraph, { color: colors.textSecondary, marginBottom: 14 }]}>{t('cancelBookingMsg')}</Text>
+
+      <View style={commonStyles.field}>
+        <Text style={[commonStyles.fieldLabel, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+          {t('reasonOptional')}
+        </Text>
+        <TextInput
+          style={[commonStyles.fieldInput, { borderColor: colors.border, color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
+          placeholder={t('reasonPlaceholder')}
+          placeholderTextColor={colors.placeholder}
+          value={reason}
+          onChangeText={setReason}
+        />
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+        <TouchableOpacity
+          style={[commonStyles.chip, { flex: 1, alignItems: 'center', borderColor: colors.border }]}
+          onPress={() => setCancelTarget(null)}
+        >
+          <Text style={[commonStyles.chipText, { color: colors.textSecondary }]}>{t('no')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[commonStyles.chip, { flex: 1, alignItems: 'center', backgroundColor: colors.danger, borderColor: colors.danger, opacity: cancelling ? 0.6 : 1 }]}
+          onPress={doCancel}
+          disabled={cancelling}
+        >
+          <Text style={[commonStyles.chipText, { color: colors.white }]}>{t('yesCancel')}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
       <FacultyTabBar activeTab="bookings" onTabPress={(key) => router.push(`/faculty/${key}` as any)} />
     </SafeAreaView>
   );
@@ -99,12 +142,15 @@ function TabButton({ label, isActive, onPress, colors }: { label: string; isActi
 
 function BookingRow({
   booking,
+  title,
   isLast,
   onCancel,
   colors,
   isRTL,
 }: {
-  booking: Booking;
+
+  booking: FacultyAppointment;
+  title: string;
   isLast: boolean;
   onCancel: () => void;
   colors: any;
@@ -112,7 +158,7 @@ function BookingRow({
 }) {
   const info = [
     { icon: 'person-circle-outline', text: booking.studentName },
-    { icon: 'time-outline', text: booking.datetime },
+    { icon: 'time-outline', text: `${booking.date} - ${booking.time}` },
   ];
 
   return (
@@ -124,7 +170,7 @@ function BookingRow({
       ]}
     >
       <View style={{ flex: 1 }}>
-        <Text style={[commonStyles.name, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{booking.title}</Text>
+        <Text style={[commonStyles.name, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
         {info.map((item) => (
           <View key={item.icon} style={[styles.infoLine, isRTL && { flexDirection: 'row-reverse' }]}>
             <Ionicons name={item.icon as any} size={16} color={colors.primary} />
@@ -145,4 +191,5 @@ function BookingRow({
 const styles = StyleSheet.create({
   infoLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   infoText: { fontSize: 12 },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
 });

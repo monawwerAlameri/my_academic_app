@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';// لتنقل بين الصفحات
+import { router } from 'expo-router'; // لتنقل بين الصفحات
 import { useState } from 'react'; // يجيب الحالة اللي هي اي قسم فاتح
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'; // يجيب المكونات الاساسية 
 import { BottomTabBar } from '../../components/BottomTabBar'; // يجيب الشريط السفلي من مجلد المكونات المشتركه بين الملفات
@@ -12,7 +12,11 @@ export default function BookingTypeScreen() {
   const { colors, t, isRTL } = useAppSettings(); // يعرف متغير ويخزن فيه قيمه نحتاجها بعدين 
   const [expanded, setExpanded] = useState<SectionKey | null>('inPerson'); // تفتح هي بشكل تلقائي 
 
-  const SUB_OPTIONS = [t('optQuestions'), t('optProjectDiscussion'), t('optOther')];
+  const SUB_OPTIONS = [
+  { value: 'Questions', label: t('optQuestions') },
+  { value: 'Project Discussion', label: t('optProjectDiscussion') },
+  { value: 'Other', label: t('optOther') },
+];
 
   const goToSchedule = (type: string, subtype: string) => { // اختصار براميتر 
     router.push({ pathname: '/student/booking-schedule', params: { type, subtype } });
@@ -78,14 +82,14 @@ function TypeSection({ icon, title, isExpanded, onToggle, onSelect, options, col
 
       {isExpanded && (
         <View style={[styles.optionsWrapper, { alignItems: isRTL ? 'flex-start' : 'flex-end' }]}>
-          {options.map((option: string) => (
+        {options.map((option: { value: string; label: string }) => (
             <TouchableOpacity
-              key={option}
+              key={option.value}
               style={[styles.optionPill, { backgroundColor: colors.pillBackground }]}
               activeOpacity={0.7}
-              onPress={() => onSelect(option)}
+              onPress={() => onSelect(option.value)}
             >
-              <Text style={[commonStyles.chipText, { color: colors.primary }]}>{option}</Text>
+              <Text style={[commonStyles.chipText, { color: colors.primary }]}>{option.label}</Text>
             </TouchableOpacity>
           ))}
         </View>

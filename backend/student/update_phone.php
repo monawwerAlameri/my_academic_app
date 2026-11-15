@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -10,6 +11,7 @@ if (empty($student_id) || empty($phone_number)) {
     echo json_encode(["success" => false, "code" => "ALL_FIELDS_REQUIRED"]);
     exit;
 }
+requireActiveStudent($conn, $student_id); 
 
 if (!preg_match('/^05[0-9]{8}$/', $phone_number)) {
     echo json_encode(["success" => false, "code" => "INVALID_PHONE_FORMAT"]);
@@ -29,18 +31,7 @@ if ($studentResult->num_rows == 0) {
 }
 $studentStmt->close();
 
-$otpCheckStmt = $conn->prepare("SELECT expires_at FROM verificationcode WHERE phone_number = ? AND is_used = 1 ORDER BY verification_id DESC LIMIT 1");
-$otpCheckStmt->bind_param("s", $phone_number);
-$otpCheckStmt->execute();
-$otpRow = $otpCheckStmt->get_result()->fetch_assoc();
 
-if (!$otpRow || strtotime($otpRow['expires_at']) < time()) {
-    echo json_encode(["success" => false, "code" => "PHONE_NOT_VERIFIED"]);
-    $otpCheckStmt->close();
-    $conn->close();
-    exit;
-}
-$otpCheckStmt->close();
 
 $checkStmt = $conn->prepare("SELECT student_id FROM student WHERE phone_number = ? AND student_id != ?");
 $checkStmt->bind_param("ss", $phone_number, $student_id);

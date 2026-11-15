@@ -34,14 +34,15 @@ if (!preg_match('/^05[0-9]{8}$/', $phone_number)) {
     exit;
 }
 
-$otpCheckStmt = $conn->prepare("SELECT expires_at FROM verificationcode WHERE phone_number = ? AND is_used = 1 ORDER BY verification_id DESC LIMIT 1");
-$otpCheckStmt->bind_param("s", $phone_number);
+$email_lower = strtolower($email);
+$otpCheckStmt = $conn->prepare("SELECT expires_at FROM verificationcode WHERE email = ? AND is_used = 1 ORDER BY verification_id DESC LIMIT 1");
+$otpCheckStmt->bind_param("s", $email_lower);
 $otpCheckStmt->execute();
 $otpCheckResult = $otpCheckStmt->get_result();
 $otpRow = $otpCheckResult->fetch_assoc();
 
 if (!$otpRow || strtotime($otpRow['expires_at']) < time()) {
-    echo json_encode(["success" => false, "code" => "PHONE_NOT_VERIFIED"]);
+    echo json_encode(["success" => false, "code" => "EMAIL_NOT_VERIFIED"]);
     $otpCheckStmt->close();
     $conn->close();
     exit;
@@ -88,11 +89,3 @@ if ($insertStmt->execute()) {
 
 $insertStmt->close();
 $conn->close();
-$stmt = $conn->prepare("SELECT email FROM banned_emails WHERE email = ?");
-$stmt->bind_param('s', $email);
-$stmt->execute();
-$stmt->store_result();
-if ($stmt->num_rows > 0) {
-    // ارجعي رد برمز مثل EMAIL_BANNED وارفضي التسجيل
-}
-$stmt->close();

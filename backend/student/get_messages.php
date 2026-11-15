@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/chat.php';
 header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -11,6 +13,7 @@ if (empty($student_id) || empty($faculty_id)) {
     echo json_encode(["success" => false, "code" => "ALL_FIELDS_REQUIRED"]);
     exit;
 }
+requireActiveStudent($conn, $student_id); 
 
 // Student must exist
 $stmt = $conn->prepare("SELECT student_id FROM student WHERE student_id = ?");
@@ -37,23 +40,8 @@ if ($facultyFound == 0) {
     $conn->close();
     exit;
 }
-// Chat is allowed only if there is an Online appointment between them that already started
-$now_check = date("Y-m-d H:i:s");
-$chatStmt = $conn->prepare("
-    SELECT appointment_id
-    FROM appointment
-    WHERE student_id = ? AND faculty_id = ?
-    AND appointment_type = 'Online'
-    AND status IN ('Booked', 'Completed')
-    AND CONCAT(appointment_date, ' ', appointment_time) <= ?
-    LIMIT 1
-");
-$chatStmt->bind_param("sss", $student_id, $faculty_id, $now_check);
-$chatStmt->execute();
-$chatAllowed = $chatStmt->get_result()->num_rows;
-$chatStmt->close();
-
-if ($chatAllowed == 0) {
+// Chat exists if there are messages between them, or an Online appointment that already started
+if (!chatExists($conn, $student_id, $faculty_id)) {
     echo json_encode(["success" => false, "code" => "CHAT_NOT_ALLOWED"]);
     $conn->close();
     exit;
@@ -92,10 +80,13 @@ if ($last_faculty_message_id > 0) {
     $readStmt->close();
 }
 
+$can_send = isFacultyActive($conn, $faculty_id);
+
 echo json_encode([
     "success" => true,
     "code" => "MESSAGES_FETCHED",
-    "data" => $messages
+    "data" => $messages,
+    "can_send" => $can_send
 ]);
 
 $conn->close();

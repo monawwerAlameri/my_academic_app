@@ -1,12 +1,14 @@
 <?php
-// backend/admin/add_user.php
-// Admin adds a student or faculty member.
-// POST JSON: { "role": "Student" | "Faculty", "userId": "...", "fullName": "...",
-//              "email": "...", "password": "...", "phoneNumber": "...",
-//              "officeLocation": "..." (Faculty only) }
+
 
 header('Content-Type: application/json');
-session_start();
+
+// Any uncaught error is returned as JSON (not an HTML page), so the app can read it
+set_exception_handler(function ($e) {
+    error_log('Admin error: ' . $e->getMessage()); // see C:\xampp\apache\logs\error.log
+    echo json_encode(['success' => false, 'message' => 'Server error', 'data' => null]);
+});
+require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
 
 if (!isset($_SESSION['admin_id'])) {
@@ -48,9 +50,40 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// full_name, user id, phone and office location columns are varchar(30)
-if (strlen($fullName) > 30 || strlen($userId) > 30 || strlen($phoneNumber) > 30 || strlen($officeLocation) > 30) {
-    echo json_encode(['success' => false, 'message' => 'Name, ID, phone and office location must be 30 characters or less', 'data' => null]);
+// Column sizes: id and phone 30, full name and email 100, office location 255
+if (mb_strlen($fullName) > 100 || strlen($userId) > 30 || strlen($phoneNumber) > 30 || strlen($email) > 100 || mb_strlen($officeLocation) > 255) {
+    echo json_encode(['success' => false, 'message' => 'One of the fields is too long', 'data' => null]);
+    exit;
+}
+
+// The ID format must match what the login screen expects
+if ($role === 'Student') {
+    if (!preg_match('/^[0-9]+$/', $userId)) {
+        echo json_encode(['success' => false, 'message' => 'Student ID must contain digits only', 'data' => null]);
+        exit;
+    }
+    if (strtolower($email) !== strtolower('s' . $userId . '@uoh.edu.sa')) {
+        echo json_encode(['success' => false, 'message' => 'Student email must be s<ID>@uoh.edu.sa', 'data' => null]);
+        exit;
+    }
+} else {
+    $userId = strtoupper($userId);
+    if (!preg_match('/^F[0-9]+$/', $userId)) {
+        echo json_encode(['success' => false, 'message' => 'Faculty ID must look like F001', 'data' => null]);
+        exit;
+    }
+}
+$email = strtolower($email);
+
+// An e-mail that belonged to a deleted account cannot be used again
+$stmt = $conn->prepare("SELECT email FROM banned_emails WHERE email = ?");
+$stmt->bind_param('s', $email);
+$stmt->execute();
+$stmt->store_result();
+$banned = $stmt->num_rows > 0;
+$stmt->close();
+if ($banned) {
+    echo json_encode(['success' => false, 'message' => 'This email belongs to a deleted account', 'data' => null]);
     exit;
 }
 

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -9,6 +10,7 @@ if (empty($student_id)) {
     echo json_encode(["success" => false, "code" => "STUDENT_ID_REQUIRED"]);
     exit;
 }
+requireActiveStudent($conn, $student_id);
 
 // Every doctor the student has an Online appointment with that already started (this is what opens a chat)
 // The chat with a running Online appointment right now (is_now) comes first, then the newest activity
@@ -38,14 +40,22 @@ $stmt = $conn->prepare("
             AND running.status = 'Booked'
             AND TIMESTAMP(running.appointment_date, running.appointment_time) <= ?
             AND TIMESTAMP(running.appointment_date, running.appointment_end_time) > ?
-        ) AS is_now
+        ) AS is_now,
+        (facultymember.account_status = 'Active') AS can_send
     FROM (
-        SELECT faculty_id, MAX(TIMESTAMP(appointment_date, appointment_time)) AS last_start
-        FROM appointment
-        WHERE student_id = ?
-        AND appointment_type = 'Online'
-        AND status IN ('Booked', 'Completed')
-        AND TIMESTAMP(appointment_date, appointment_time) <= ?
+        SELECT faculty_id, MAX(last_time) AS last_start
+        FROM (
+            SELECT faculty_id, TIMESTAMP(appointment_date, appointment_time) AS last_time
+            FROM appointment
+            WHERE student_id = ?
+            AND appointment_type = 'Online'
+            AND status IN ('Booked', 'Completed')
+            AND TIMESTAMP(appointment_date, appointment_time) <= ?
+            UNION ALL
+            SELECT faculty_id, sent_at AS last_time
+            FROM message
+            WHERE student_id = ?
+        ) AS all_chats
         GROUP BY faculty_id
     ) AS chats
     INNER JOIN facultymember ON facultymember.faculty_id = chats.faculty_id
@@ -58,7 +68,7 @@ $stmt = $conn->prepare("
     LEFT JOIN message AS last_message ON last_message.message_id = last_ids.last_id
     ORDER BY is_now DESC, COALESCE(last_message.sent_at, chats.last_start) DESC, facultymember.faculty_id ASC
 ");
-$stmt->bind_param("sssssss", $student_id, $student_id, $now, $now, $student_id, $now, $student_id);
+$stmt->bind_param("ssssssss", $student_id, $student_id, $now, $now, $student_id, $now, $student_id, $student_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -66,6 +76,7 @@ $conversations = [];
 while ($row = $result->fetch_assoc()) {
     $row['unread_count'] = (int)$row['unread_count'];
     $row['is_now']       = ((int)$row['is_now'] > 0);
+    $row['can_send']     = ((int)$row['can_send'] > 0);
     $conversations[] = $row;
 }
 

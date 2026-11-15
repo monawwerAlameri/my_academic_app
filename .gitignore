@@ -48,3 +48,4 @@ example
 # generated native folders
 /ios
 /android
+'password' => (require DIR . '/secret.php')['mail_password'],

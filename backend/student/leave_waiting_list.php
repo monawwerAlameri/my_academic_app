@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -14,6 +15,7 @@ if (empty($waiting_id)) {
     echo json_encode(["success" => false, "code" => "WAITING_ID_REQUIRED"]);
     exit;
 }
+requireActiveStudent($conn, $student_id); 
 
 // The waiting-list entry must belong to this student
 $stmt = $conn->prepare("SELECT faculty_id FROM waitinglist WHERE waiting_id = ? AND student_id = ?");

@@ -2,31 +2,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
+  Alert,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { BottomTabBar } from '../../components/BottomTabBar';
+import { DataState } from '../../components/DataState';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { useFetch } from '../../hooks/useFetch';
+import { errorKey } from '../../services/errors';
+import { Doctor, Review, getDoctorReviews, getDoctors, submitReview } from '../../services/student';
 import { commonStyles } from '../../theme/styles';
 
-type Review = { id: string; name: string; anonymous: boolean; rating: number; comment: string; date: string; };
-type Doctor = { id: string; name: string; avgRating: number; reviewsCount: number; reviews: Review[]; };
-
-const DOCTORS: Doctor[] = [
-  {
-    id: '1', name: 'Dr. Fatimah Abdullah', avgRating: 4.6, reviewsCount: 32,
-    reviews: [
-      { id: 'r1', name: 'Nora A.', anonymous: false, rating: 5, comment: 'Very clear and patient during the meeting.', date: '2 days ago' },
-      { id: 'r2', name: 'Anonymous student', anonymous: true, rating: 4, comment: 'Helpful feedback, replied fast on chat.', date: '1 week ago' },
-    ],
-  },
-  { id: '2', name: 'Dr. Najlaa Saleh', avgRating: 4.2, reviewsCount: 18, reviews: [] },
-];
 
 function StarRow({ rating, size = 14, editable = false, onChange, colors }: any) {
   return (
@@ -47,18 +39,48 @@ export default function ReviewsScreen() {
   const [myRating, setMyRating] = useState(0);
   const [myComment, setMyComment] = useState('');
   const [postAnonymously, setPostAnonymously] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+const { data: doctors, loading: doctorsLoading, error: doctorsError, reload: reloadDoctors } =
+  useFetch<Doctor[]>(getDoctors, []);
+
+const { data: reviews, loading: reviewsLoading, error: reviewsError, reload: reloadReviews } =
+  useFetch<Review[]>(
+    () => (selectedDoctor ? getDoctorReviews(selectedDoctor.id) : Promise.resolve([])),
+    [],
+    [selectedDoctor?.id]
+  );
 
   const align = { textAlign: isRTL ? 'right' : 'left' } as const;
   const reverse = isRTL && { flexDirection: 'row-reverse' as const };
 
-  const filteredDoctors = DOCTORS.filter((d) => d.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredDoctors = doctors.filter((d) => d.name.toLowerCase().includes(search.toLowerCase()));
 
-  const handleSubmitReview = () => {
-    if (myRating === 0 || myComment.trim() === '') return;
+const handleSubmitReview = async () => {
+  if (!selectedDoctor || submitting) return;
+  if (myRating === 0 || myComment.trim() === '') {
+    Alert.alert(t('error'), t('err_ALL_FIELDS_REQUIRED'));
+    return;
+  }
+  setSubmitting(true);
+  try {
+    await submitReview(selectedDoctor.id, {
+      rating: myRating,
+      comment: myComment.trim(),
+      anonymous: postAnonymously,
+    });
     setMyRating(0);
     setMyComment('');
     setPostAnonymously(false);
-  };
+    Alert.alert(t('reviewSubmitted'));
+    reloadReviews();
+    reloadDoctors();
+  } catch (e) {
+    Alert.alert(t('error'), t(errorKey(e) as any));
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -76,8 +98,15 @@ export default function ReviewsScreen() {
           />
         </View>
 
-        {!selectedDoctor &&
-          filteredDoctors.map((doctor) => (
+        {!selectedDoctor && (
+  <DataState
+    loading={doctorsLoading}
+    error={doctorsError}
+    empty={filteredDoctors.length === 0}
+    emptyText={t('noDoctorsFound')}
+    onRetry={reloadDoctors}
+  >
+    {filteredDoctors.map((doctor) => (
             <TouchableOpacity
               key={doctor.id}
               style={[commonStyles.card, { alignItems: 'center', backgroundColor: colors.cardBackground, borderColor: colors.border }, reverse]}
@@ -96,7 +125,9 @@ export default function ReviewsScreen() {
               </View>
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.placeholder} />
             </TouchableOpacity>
-          ))}
+              ))}
+  </DataState>
+)}
 
         {selectedDoctor && (
           <View style={[commonStyles.panel, { padding: 18, borderColor: colors.border }]}>
@@ -108,7 +139,7 @@ export default function ReviewsScreen() {
             <View style={[commonStyles.headerRow, reverse]}>
               <Ionicons name="person-circle-outline" size={44} color={colors.primary} />
               <View>
-                <Text style={[commonStyles.name, { color: colors.primary }]}>{selectedDoctor.name}</Text>
+             <Text style={[commonStyles.name, { color: colors.primary }]}>{selectedDoctor.name}</Text>
                 <View style={[styles.row, reverse]}>
                   <StarRow rating={Math.round(selectedDoctor.avgRating)} colors={colors} />
                   <Text style={[styles.smallText, { color: colors.textSecondary }]}>
@@ -120,20 +151,27 @@ export default function ReviewsScreen() {
 
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-            {selectedDoctor.reviews.length === 0 ? (
-              <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noReviewsYet')}</Text>
-            ) : (
-              selectedDoctor.reviews.map((review) => (
+         <DataState
+  loading={reviewsLoading}
+  error={reviewsError}
+  empty={reviews.length === 0}
+  emptyText={t('noReviewsYet')}
+  onRetry={reloadReviews}
+>
+  {reviews.map((review) => (
                 <View key={review.id} style={{ marginBottom: 14 }}>
                   <View style={[styles.row, { justifyContent: 'space-between' }, reverse]}>
-                    <Text style={[commonStyles.name, { color: colors.primary }]}>{review.name}</Text>
+    <Text style={[commonStyles.name, { color: colors.primary }]}>
+      {review.anonymous ? t('anonymousReviewer') : review.name}
+    </Text>                      
+                    
                     <Text style={[styles.smallText, { color: colors.textSecondary }]}>{review.date}</Text>
                   </View>
                   <StarRow rating={review.rating} size={12} colors={colors} />
                   <Text style={[styles.smallText, align, { color: colors.textSecondary, marginTop: 6 }]}>{review.comment}</Text>
                 </View>
-              ))
-            )}
+               ))}
+</DataState>
 
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 

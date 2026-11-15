@@ -11,14 +11,18 @@ import {
 } from 'react-native';
 import { AdminTabBar } from '../../components/AdminTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { adminApi } from '../../services/adminApi';
+import { clearSession } from '../../services/session';
 import { commonStyles } from '../../theme/styles';
 
 export default function SettingsScreen() {
   const { colors, t, isDarkMode, toggleDarkMode, language, toggleLanguage, isRTL } =
     useAppSettings();
 
-  const handlePress = (key: string) => {
-    if (key === 'logout') {
+  const handlePress = async (key: string) => {
+     if (key === 'logout') {
+      try { await adminApi.logout(); } catch {}
+      clearSession();
       router.replace('/login');
     } else if (key === 'account') {
       router.push('/admin/account');
@@ -146,3 +150,4 @@ const styles = StyleSheet.create({
   watermarkWrapper: { alignItems: 'center', marginTop: 50, opacity: 0.18 },
   watermarkText: { fontSize: 22, fontWeight: '700', textAlign: 'center', lineHeight: 26 },
 });
+

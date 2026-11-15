@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { clearSession } from '../../services/session';
 import { commonStyles } from '../../theme/styles';
 
 export default function SettingsScreen() {
@@ -68,7 +69,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={[commonStyles.menuRow, reverse]} activeOpacity={0.7} onPress={() => router.push('/login')}>
+        <TouchableOpacity style={[commonStyles.menuRow, reverse]} activeOpacity={0.7} onPress={() => { clearSession(); router.replace('/login'); }}>
           <Ionicons name="log-out-outline" size={20} color={colors.danger} />
           <Text style={[commonStyles.name, { color: colors.danger }]}>{t('logout')}</Text>
         </TouchableOpacity>
@@ -93,3 +94,5 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   watermark: { alignItems: 'center', marginTop: 50, opacity: 0.18 },
 });
+
+

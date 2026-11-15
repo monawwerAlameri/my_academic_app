@@ -2,39 +2,56 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { AdminHeader } from '../../components/AdminHeader';
 import { AdminTabBar } from '../../components/AdminTabBar';
+import { DataState } from '../../components/DataState';
 import { useAppSettings } from '../../context/AppSettingsContext';
-import { AdminUser, initialUsers, UserRole } from '../../services/adminMockData';
+import { useFetch } from '../../hooks/useFetch';
+import { adminApi, ApiUser, UserRoleApi } from '../../services/adminApi';
 import { commonStyles } from '../../theme/styles';
+
+type UserRole = 'student' | 'faculty';
+interface AdminUser {
+  id: string;
+  name: string;
+  role: UserRole;
+  email: string;
+  phone: string;
+  office: string;
+  suspended: boolean;
+}
 type Filter = 'all' | UserRole;
 type ActionType = 'delete' | 'suspend' | 'activate';
 const FILTERS: Filter[] = ['all', 'student', 'faculty'];
 
-const todayString = () => {
-  const d = new Date();
-  const dd = ('0' + d.getDate()).slice(-2);
-  const mm = ('0' + (d.getMonth() + 1)).slice(-2);
-  return dd + '-' + mm + '-' + d.getFullYear();
-};
+const toUser = (u: ApiUser): AdminUser => ({
+  id: String(u.userId),
+  name: u.fullName ?? '',
+  role: u.role === 'Faculty' ? 'faculty' : 'student',
+  email: u.email ?? '',
+  phone: u.phoneNumber ?? '',
+  office: (u as any).officeLocation ?? '',
+  suspended: u.accountStatus === 'Suspended',
+});
 
 export default function AdminUsers() {
   const { colors, t, isRTL } = useAppSettings();
-  const [users, setUsers] = useState<AdminUser[]>(initialUsers);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [pending, setPending] = useState<{ user: AdminUser; action: ActionType } | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
@@ -42,12 +59,15 @@ export default function AdminUsers() {
   const [newDept, setNewDept] = useState('');
   const [addError, setAddError] = useState(false);
 
-  const roleLabel = (role: UserRole) =>
-    role === 'student' ? t('roleStudent') : role === 'faculty' ? t('roleFaculty') : t('roleAdmin');
-  const filterLabel = (f: Filter) => (f === 'all' ? t('all') : roleLabel(f));
+  const { data: users, loading, error, reload } = useFetch(async () => {
+    const res = await adminApi.getUsers();
+    if (!res.success || !res.data) throw new Error(res.message);
+    return res.data.map(toUser);
+  }, [] as AdminUser[]);
 
-  const roleColor = (role: UserRole) =>
-    role === 'student' ? colors.accent : role === 'faculty' ? colors.success : colors.danger;
+  const roleLabel = (role: UserRole) => (role === 'student' ? t('roleStudent') : t('roleFaculty'));
+  const filterLabel = (f: Filter) => (f === 'all' ? t('all') : roleLabel(f));
+  const roleColor = (role: UserRole) => (role === 'student' ? colors.accent : colors.success);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -87,17 +107,24 @@ export default function AdminUsers() {
     return colors.danger;
   };
 
-  const confirmAction = () => {
-    if (pending !== null) {
-      const id = pending.user.id;
-      const act = pending.action;
-      if (act === 'delete') {
-        setUsers((prev) => prev.filter((u) => u.id !== id));
-      } else {
-        setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, suspended: act === 'suspend' } : u)));
-      }
+  const confirmAction = async () => {
+    if (pending === null || busy) return;
+    const { user, action } = pending;
+    const role: UserRoleApi = user.role === 'faculty' ? 'Faculty' : 'Student';
+    setBusy(true);
+    try {
+      const res =
+        action === 'delete'
+          ? await adminApi.deleteUser(user.id, role)
+          : await adminApi.updateUserStatus(user.id, role, action === 'suspend' ? 'Suspended' : 'Active');
+      if (!res.success) Alert.alert(t('error'), t('somethingWentWrong'));
+      else reload();
+    } catch {
+      Alert.alert(t('error'), t('somethingWentWrong'));
+    } finally {
+      setBusy(false);
+      setPending(null);
     }
-    setPending(null);
   };
 
   // ---------- add doctor ----------
@@ -109,25 +136,42 @@ export default function AdminUsers() {
     setShowAdd(true);
   };
 
-  const saveDoctor = () => {
+  const saveDoctor = async () => {
+    if (busy) return;
     const name = newName.trim();
     const email = newEmail.trim();
-    const validEmail = email.indexOf('@') > 0 && email.indexOf('.') > 0;
-    if (name === '' || !validEmail) {
-        setAddError(true);
+    const dept = newDept.trim();
+    const emailOk = email.includes('@') && email.includes('.');
+    const allFilled = name.length > 0 && dept.length > 0;
+    if (!allFilled) {
+      setAddError(true);
       return;
     }
-    const fullName = name.indexOf('Dr.') === 0 ? name : 'Dr. ' + name;
-    const doctor: AdminUser = {
-      id: 'u' + Date.now(),
-      name: fullName,
-      role: 'faculty',
-      email: email,
-      joinedOn: todayString(),
-      department: newDept.trim(),
-    };
-    setUsers((prev) => [doctor, ...prev]);
-    setShowAdd(false);
+    if (!emailOk) {
+      setAddError(true);
+      return;
+    }
+    const fullName = name.startsWith('Dr.') ? name : 'Dr. ' + name;
+    setBusy(true);
+    try {
+      const res = await adminApi.addDoctor(fullName, email, dept);
+      const doctor = res.data;
+      if (!res.success) {
+        Alert.alert(t('error'), t('somethingWentWrong'));
+        return;
+      }
+      if (doctor === null) {
+        Alert.alert(t('error'), t('somethingWentWrong'));
+        return;
+      }
+      setShowAdd(false);
+      Alert.alert(doctor.facultyId, doctor.temporaryPassword);
+      reload();
+    } catch {
+      Alert.alert(t('error'), t('somethingWentWrong'));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const renderField = (
@@ -154,7 +198,6 @@ export default function AdminUsers() {
       />
     </View>
   );
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -193,67 +236,61 @@ export default function AdminUsers() {
                 activeOpacity={0.8}
               >
                 <Text style={[commonStyles.chipText, { color: active ? colors.white : colors.textSecondary }]}>{filterLabel(f)}</Text>
-                </TouchableOpacity>
+              </TouchableOpacity>
             );
           })}
         </View>
 
-        {visible.length === 0 && (
-          <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noUsersFound')}</Text>
-        )}
-
-        {visible.map((u) => {
-          const isSuspended = u.suspended === true;
-          return (
-            <View
-              key={u.id}
-              style={[
-                commonStyles.card, styles.card,
-                { backgroundColor: colors.cardBackground, borderColor: colors.border },
-                isRTL && { flexDirection: 'row-reverse' },
-                isSuspended && { opacity: 0.65 },
-              ]}
-            >
-              <View style={[styles.avatar, { backgroundColor: roleColor(u.role) + '33' }]}>
-                <Text style={[styles.avatarText, { color: roleColor(u.role) }]}>{initials(u.name)}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={[styles.
-                nameRow, isRTL && { flexDirection: 'row-reverse' }]}>
-                  <Text style={[styles.name, { color: colors.primary }]} numberOfLines={1}>{u.name}</Text>
-                  <View style={[styles.badge, { backgroundColor: colors.pillBackground }]}>
-                    <Text style={[styles.badgeText, { color: colors.primary }]}>{roleLabel(u.role)}</Text>
-                  </View>
-                  {isSuspended && (
-                    <View style={[styles.badge, { backgroundColor: colors.warning + '2E' }]}>
-                      <Text style={[styles.badgeText, { color: colors.warning }]}>{t('suspended')}</Text>
-                    </View>
-                  )}
+        <DataState loading={loading} error={error} empty={visible.length === 0} emptyText={t('noUsersFound')} onRetry={reload}>
+          {visible.map((u) => {
+            const isSuspended = u.suspended;
+            return (
+              <View
+                key={u.role + '-' + u.id}
+                style={[
+                  commonStyles.card, styles.card,
+                  { backgroundColor: colors.cardBackground, borderColor: colors.border },
+                  isRTL && { flexDirection: 'row-reverse' },
+                  isSuspended && { opacity: 0.65 },
+                ]}
+              >
+                <View style={[styles.avatar, { backgroundColor: roleColor(u.role) + '33' }]}>
+                  <Text style={[styles.avatarText, { color: roleColor(u.role) }]}>{initials(u.name)}</Text>
                 </View>
-                <Text style={[styles.meta, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>{u.email}</Text>
-                {u.department ? (
-                  <Text style={[styles.meta, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>{u.department}</Text>
-                ) : null}
-                <Text style={[styles.meta, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
-                  {t('joinedOn')} {u.joinedOn}
-                </Text>
-              </View>
+                <View style={{ flex: 1 }}>
+                  <View style={[styles.nameRow, isRTL && { flexDirection: 'row-reverse' }]}>
+                    <Text style={[styles.name, { color: colors.primary }]} numberOfLines={1}>{u.name}</Text>
+                    <View style={[styles.badge, { backgroundColor: colors.pillBackground }]}>
+                      <Text style={[styles.badgeText, { color: colors.primary }]}>{roleLabel(u.role)}</Text>
+                    </View>
+                    {isSuspended && (
+                      <View style={[styles.badge, { backgroundColor: colors.warning + '2E' }]}>
+                        <Text style={[styles.badgeText, { color: colors.warning }]}>{t('suspended')}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={[styles.meta, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>{u.email}</Text>
+                  {u.office ? (
+                    <Text style={[styles.meta, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>{u.office}</Text>
+                  ) : null}
+                  {u.phone ? (<Text style={[styles.meta, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{u.phone}</Text>
+                  ) : null}
+                </View>
 
-              <View style={[styles.actions, isRTL && { flexDirection: 'row-reverse' }]}>
-                {u.role === 'faculty' && (
-                  <TouchableOpacity
-                    style={[styles.iconBtn, { backgroundColor: (isSuspended ? colors.success : colors.warning) + '2E' }]}
-                    activeOpacity={0.7}
-                    onPress={() => setPending({ user: u, action: isSuspended ? 'activate' : 'suspend' })}
-                  >
-                    <Ionicons
-                      name={isSuspended ? 'play-circle-outline' : 'pause-circle-outline'}
-                      size={21}
-                      color={isSuspended ? colors.success : colors.warning}
-                    />
-                  </TouchableOpacity>
-                )}
-                {u.role !== 'admin' && (
+                <View style={[styles.actions, isRTL && { flexDirection: 'row-reverse' }]}>
+                  {u.role === 'faculty' && (
+                    <TouchableOpacity
+                      style={[styles.iconBtn, { backgroundColor: (isSuspended ? colors.success : colors.warning) + '2E' }]}
+                      activeOpacity={0.7}
+                      onPress={() => setPending({ user: u, action: isSuspended ? 'activate' : 'suspend' })}
+                    >
+                      <Ionicons
+                        name={isSuspended ? 'play-circle-outline' : 'pause-circle-outline'}
+                        size={21}
+                        color={isSuspended ? colors.success : colors.warning}
+                      />
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
                     style={[styles.iconBtn, { backgroundColor: colors.dangerLight }]}
                     activeOpacity={0.7}
@@ -261,11 +298,11 @@ export default function AdminUsers() {
                   >
                     <Ionicons name="trash-outline" size={20} color={colors.danger} />
                   </TouchableOpacity>
-                )}
+                </View>
               </View>
-            </View>
-          );
-        })}
+            );
+          })}
+        </DataState>
         <View style={{ height: 110 }} />
       </ScrollView>
 
@@ -282,7 +319,7 @@ export default function AdminUsers() {
               <TouchableOpacity style={[styles.dialogButton, { borderColor: colors.border, borderWidth: 1 }]} onPress={() => setPending(null)}>
                 <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('cancel')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.dialogButton, { backgroundColor: confirmColor() }]} onPress={confirmAction}>
+              <TouchableOpacity style={[styles.dialogButton, { backgroundColor: confirmColor(), opacity: busy ? 0.6 : 1 }]} onPress={confirmAction}>
                 <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>{confirmLabel()}</Text>
               </TouchableOpacity>
             </View>
@@ -305,7 +342,7 @@ export default function AdminUsers() {
               <TouchableOpacity style={[styles.dialogButton, { borderColor: colors.border, borderWidth: 1 }]} onPress={() => setShowAdd(false)}>
                 <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('cancel')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.dialogButton, { backgroundColor: colors.primary }]} onPress={saveDoctor}>
+              <TouchableOpacity style={[styles.dialogButton, { backgroundColor: colors.primary, opacity: busy ? 0.6 : 1 }]} onPress={saveDoctor}>
                 <Text style={{ color: colors.white, fontWeight: '700' }}>{t('save')}</Text>
               </TouchableOpacity>
             </View>

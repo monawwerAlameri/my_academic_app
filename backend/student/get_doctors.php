@@ -11,6 +11,7 @@ $stmt = $conn->prepare("
         COUNT(review.review_id) AS reviews_count
     FROM facultymember
     LEFT JOIN review ON review.faculty_id = facultymember.faculty_id
+     WHERE facultymember.account_status = 'Active' 
     GROUP BY facultymember.faculty_id, facultymember.full_name, facultymember.office_location
     ORDER BY facultymember.full_name ASC
 ");
