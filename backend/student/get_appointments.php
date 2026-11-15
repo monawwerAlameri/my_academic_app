@@ -15,6 +15,7 @@ $now = date("Y-m-d H:i:s");
 $stmt = $conn->prepare("
     SELECT
         appointment.appointment_id,
+        appointment.faculty_id,
         appointment.appointment_date,
         appointment.appointment_time,
         appointment.appointment_end_time,
