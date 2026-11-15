@@ -212,7 +212,7 @@ export const updateFacultyProfile = async (p: FacultyProfile) =>
 };
 
 export const facultyVerify = async (faculty_id: string, code: string) => {
-  const res = await request<{ data: { faculty_id: string; full_name: string; token: string } }>('/Faculty/verify.php', {
+  const res = await request<{ data: { faculty_id: string; full_name: string } }>('/Faculty/verify.php', {
     method: 'POST',
     body: JSON.stringify({ faculty_id, code }),
   });

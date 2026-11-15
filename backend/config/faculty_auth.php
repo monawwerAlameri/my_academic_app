@@ -1,6 +1,5 @@
 <?php
 require_once DIR . '/auth.php';
-require_once DIR . '/token.php';
 
 function facultyFail($code, $message = "", $data = null, $conn = null) {
     echo json_encode(["success" => false, "code" => $code, "message" => $message, "data" => $data], JSON_UNESCAPED_UNICODE);
@@ -13,9 +12,10 @@ function facultyOk($code, $data = null, $message = "") {
 }
 
 function requireFacultyAuth($conn) {
-    $faculty_id = verifyToken(readBearerToken(), 'faculty');
-    if (!$faculty_id) {
-        facultyFail("UNAUTHORIZED", "Login required", null, $conn);
+    $input = json_decode(file_get_contents("php://input"), true) ?? [];
+    $faculty_id = trim($_GET['faculty_id'] ?? ($input['faculty_id'] ?? ''));
+    if ($faculty_id === '') {
+        facultyFail("ALL_FIELDS_REQUIRED", "Faculty ID is required", null, $conn);
     }
     requireActiveFaculty($conn, $faculty_id);
     return $faculty_id;

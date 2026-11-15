@@ -75,13 +75,6 @@ try {
         exit;
     }
 
-    // Remove the user's login tokens too
-    $tokenRole = ($role === 'Student') ? 'student' : 'faculty';
-    $stmt = $conn->prepare("DELETE FROM auth_token WHERE user_id = ? AND role = ?");
-    $stmt->bind_param('ss', $userId, $tokenRole);
-    $stmt->execute();
-    $stmt->close();
-
     $conn->commit();
 } catch (Throwable $e) {
     $conn->rollback();

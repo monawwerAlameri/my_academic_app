@@ -1,7 +1,6 @@
 <?php
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../config/token.php';
 
 $data       = json_decode(file_get_contents("php://input"), true);
 $faculty_id = trim($data['faculty_id'] ?? '');
@@ -66,8 +65,6 @@ echo json_encode([
         "faculty_id" => $faculty['faculty_id'],
         "full_name"  => $faculty['full_name'],
         "email"      => $email,
-        "token"      => issueToken('faculty', $faculty['faculty_id']),
-        "expires_in" => TOKEN_LIFETIME_SECONDS
     ]
 ], JSON_UNESCAPED_UNICODE);
 

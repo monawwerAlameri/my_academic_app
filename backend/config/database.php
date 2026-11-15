@@ -2,16 +2,15 @@
 date_default_timezone_set('Asia/Riyadh');
 $host = "srv2146.hstgr.io";
 $username = "u920842481_admin";
-$password = (require __DIR__ . '/secret.php')['db_password'];
+$password = (require DIR . '/secret.php')['db_password'];
 $database = "u920842481_academic_book";
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
 try {
     $conn = new mysqli($host, $username, $password, $database);
-} catch (Throwable $e) {
-    // The real error stays in the server log only, the app gets a clean JSON
-    error_log("Database connection failed: " . $e->getMessage());
+    $conn->set_charset('utf8mb4');
+} catch (mysqli_sql_exception $e) {
     header('Content-Type: application/json');
-    echo json_encode(["success" => false, "code" => "DB_ERROR"]);
-    exit;
+    die(json_encode(["success" => false, "code" => "DB_CONNECTION_FAILED"]));
 }
-?>

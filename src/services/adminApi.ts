@@ -15,8 +15,7 @@ export const ADMIN_ENDPOINTS = {
   getDashboard: ADMIN_URL + '/get_dashboard.php',
   getReports: ADMIN_URL + '/get_reports.php',
   getReviews: ADMIN_URL + '/get_reviews.php',
-  addUser: BASE_URL 
-  + '/add_user.php', 
+  addUser: ADMIN_URL + '/add_user.php',
 };
 
 export interface ApiResponse<T> {
