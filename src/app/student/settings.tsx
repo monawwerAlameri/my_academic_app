@@ -80,7 +80,7 @@ export default function SettingsScreen() {
             <View style={[commonStyles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
             <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
           </View>
-          <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Academic{'\n'}Booking</Text>
+          <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Silah</Text>
         </View>
 
         <View style={{ height: 90 }} />

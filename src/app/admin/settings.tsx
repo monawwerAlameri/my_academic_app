@@ -124,7 +124,7 @@ export default function SettingsScreen() {
             <View style={[commonStyles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
             <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
           </View>
-          <Text style={[styles.watermarkText, { color: colors.primary }]}>Academic{'\n'}Booking</Text>
+          <Text style={[styles.watermarkText, { color: colors.primary }]}>Silah</Text>
         </View>
 
         <View style={{ height: 90 }} />

@@ -24,7 +24,7 @@ export default function AboutScreen() {
           <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
         </View>
 
-        <Text style={[styles.appName, { color: colors.primary }]}>Academic{'\n'}Booking</Text>
+        <Text style={[styles.appName, { color: colors.primary }]}>Silah</Text>
 
         <View style={[commonStyles.panel, styles.card, { borderColor: colors.border }]}>
           <Text style={[commonStyles.paragraph, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('aboutP1')}</Text>

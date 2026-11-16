@@ -168,7 +168,7 @@ export default function RegisterScreen() {
           <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
         </View>
 
-        <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Academic{'\n'}Booking</Text>
+        <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Silah</Text>
         <Text style={[commonStyles.headerTitle, { color: colors.accent, textAlign: 'center', marginTop: 16 }]}>{t('createAccount')}</Text>
         <Text style={[commonStyles.headerSubtitle, { color: colors.primary, textAlign: 'center' }]}>{t('joinUs')}</Text>
 

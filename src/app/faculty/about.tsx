@@ -24,7 +24,7 @@ export default function FacultyAboutScreen() {
           <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
         </View>
 
-        <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center', marginBottom: 24 }]}>Academic{'\n'}Booking</Text>
+        <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center', marginBottom: 24 }]}>Silah</Text>
 
         <View style={[commonStyles.panel, styles.card, { borderColor: colors.border }]}>
           {['aboutP1', 'aboutP2', 'aboutP3'].map((key) => (

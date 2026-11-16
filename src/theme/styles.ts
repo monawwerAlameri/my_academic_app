@@ -5,7 +5,7 @@ export const commonStyles = StyleSheet.create({
   scrollContentHeader: { paddingHorizontal: 20, paddingTop: 16 },
 
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
-  headerTitle: { fontSize: 22, fontWeight: '700' },
+  headerTitle: { fontSize: 40, fontWeight: 'bold' },
   headerSubtitle: { fontSize: 12, lineHeight: 18, marginBottom: 22 },
 
   card: { flexDirection: 'row', gap: 12, borderWidth: 1, borderRadius: 16, padding: 12, marginBottom: 12 },

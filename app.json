@@ -7,9 +7,10 @@
     "icon": "./assets/images/icon.png",
     "scheme": "myacademicapp",
     "userInterfaceStyle": "automatic",
-    "ios": {
-      "icon": "./assets/expo.icon"
-    },
+   "ios": {
+  "icon": "./assets/expo.icon",
+  "bundleIdentifier": "com.silah.academicapp"
+},
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",

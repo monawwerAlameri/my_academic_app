@@ -24,7 +24,7 @@ export default function AdminAboutScreen() {
           <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
         </View>
 
-        <Text style={[styles.appName, { color: colors.primary }]}>Academic{'\n'}Booking</Text>
+        <Text style={[styles.appName, { color: colors.primary }]}>Silah</Text>
 
         <View style={[commonStyles.panel, styles.card, { borderColor: colors.border }]}>
           <Text style={[commonStyles.paragraph, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('aboutP1')}</Text>
@@ -44,7 +44,7 @@ export default function AdminAboutScreen() {
 const styles = StyleSheet.create({
   scrollContent: { alignItems: 'center' },
   headerRow: { marginBottom: 26, alignSelf: 'stretch' },
-  appName: { fontSize: 22, fontWeight: '700', textAlign: 'center', lineHeight: 26, marginBottom: 24 },
+  appName: { fontSize: 40, fontWeight: 'bold', textAlign: 'center', lineHeight: 26, marginBottom: 24 },
   card: { alignSelf: 'stretch', padding: 18, gap: 14 },
   version: { fontSize: 11, textAlign: 'center', marginTop: 6 },
 });
