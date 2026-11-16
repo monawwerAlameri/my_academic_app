@@ -1,26 +1,10 @@
 <?php
-// backend/admin/get_users.php
 // Returns all students and faculty members (with account status) for the User Management screen.
-// Requires the account_status column (run add_account_status.sql first).
-
 header('Content-Type: application/json');
-
-// Any uncaught error is returned as JSON (not an HTML page), so the app can read it
-set_exception_handler(function ($e) {
-    error_log('Admin error: ' . $e->getMessage()); // see C:\xampp\apache\logs\error.log
-    echo json_encode(['success' => false, 'message' => 'Server error', 'data' => null]);
-});
-require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/admin_auth.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Unauthorized. Please log in as admin.',
-        'data' => null
-    ]);
-    exit;
-}
+requireAdmin($conn);
 
 $users = [];
 
@@ -56,3 +40,4 @@ echo json_encode([
     'message' => 'Users retrieved successfully',
     'data' => $users
 ]);
+$conn->close();

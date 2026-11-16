@@ -1,34 +1,14 @@
 <?php
-
-
 header('Content-Type: application/json');
-
-// Any uncaught error is returned as JSON (not an HTML page), so the app can read it
-set_exception_handler(function ($e) {
-    error_log('Admin error: ' . $e->getMessage()); // see C:\xampp\apache\logs\error.log
-    echo json_encode(['success' => false, 'message' => 'Server error', 'data' => null]);
-});
-require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/admin_mail.php';
-
-const OTP_VALID_SECONDS = 600; // 10 minutes, same as the student/faculty codes
+require_once __DIR__ . '/admin_auth.php';
+require_once __DIR__ . '/../config/mailer.php';
 
 // true  = do NOT send an email, return the code in the response (for Postman testing)
-// false = send the real email with PHPMailer. MUST be false in the final version.
+// false = send the real email. MUST be false in the final version.
 const ADMIN_OTP_DEV_MODE = false;
 
-// Locked after too many wrong codes (set in verify_login.php)
-if (isset($_SESSION['locked_until'])) {
-    $remaining = $_SESSION['locked_until'] - time();
-    if ($remaining > 0) {
-        echo json_encode(['success' => false, 'message' => 'Too many attempts. Try again later.', 'data' => ['retryAfterSeconds' => $remaining]]);
-        exit;
-    }
-    unset($_SESSION['locked_until']); // 10 minutes passed, allowed again
-}
-
-$input = json_decode(file_get_contents('php://input'), true);
+$input = json_decode(file_get_contents('php://input'), true) ?? [];
 
 $username = trim($input['username'] ?? ($input['email'] ?? ''));
 $password = $input['password'] ?? '';
@@ -46,29 +26,41 @@ $stmt->close();
 
 if (!$admin || !password_verify($password, $admin['password'])) {
     echo json_encode(['success' => false, 'message' => 'Invalid username or password', 'data' => null]);
+    $conn->close();
     exit;
 }
 
-// Password is correct: create a one-time code, kept in the session (hashed)
-$code = (string) random_int(100000, 999999);
+$email = strtolower($admin['email']);
 
-unset($_SESSION['admin_id'], $_SESSION['role']); // not logged in until the code is verified
-$_SESSION['pending_admin_id'] = $admin['admin_id'];
-$_SESSION['otp_hash'] = hash('sha256', $code);
-$_SESSION['otp_expires'] = time() + OTP_VALID_SECONDS;
-$_SESSION['otp_attempts'] = 0;
+// Same OTP rate limit as students and faculty (5 codes, then a fixed 10-minute block)
+$wait = otpWaitSeconds($conn, $email);
+if ($wait > 0) {
+    echo json_encode(['success' => false, 'message' => 'Too many attempts. Try again later.', 'data' => ['retryAfterSeconds' => $wait]]);
+    $conn->close();
+    exit;
+}
+
+$code       = strval(random_int(100000, 999999));
+$expires_at = date("Y-m-d H:i:s", time() + OTP_LIFETIME_SECONDS);
+
+$stmt = $conn->prepare("INSERT INTO verificationcode (email, code, expires_at, is_used) VALUES (?, ?, ?, 0)");
+$stmt->bind_param('sss', $email, $code, $expires_at);
+$stmt->execute();
+$stmt->close();
 
 $data = [
-    'email' => substr($admin['email'], 0, 1) . '***' . strstr($admin['email'], '@'),
-    'expiresInSeconds' => OTP_VALID_SECONDS
+    'adminId'          => $admin['admin_id'],
+    'email'            => substr($email, 0, 1) . '***' . strstr($email, '@'),
+    'expiresInSeconds' => OTP_LIFETIME_SECONDS
 ];
 
 if (ADMIN_OTP_DEV_MODE) {
     $data['devCode'] = $code; // testing only
-} elseif (!sendAdminMail($admin['email'], $admin['full_name'], 'Your admin verification code', "Your verification code is: $code\nIt is valid for 10 minutes.")) {
-    unset($_SESSION['pending_admin_id'], $_SESSION['otp_hash'], $_SESSION['otp_expires'], $_SESSION['otp_attempts']);
+} elseif (!sendOtpEmail($email, $code)) {
     echo json_encode(['success' => false, 'message' => 'Failed to send the verification code', 'data' => null]);
+    $conn->close();
     exit;
 }
 
 echo json_encode(['success' => true, 'message' => 'Verification code sent', 'data' => $data]);
+$conn->close();

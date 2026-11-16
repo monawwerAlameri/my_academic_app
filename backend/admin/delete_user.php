@@ -1,26 +1,12 @@
 <?php
-
 header('Content-Type: application/json');
-
-// Any uncaught error is returned as JSON (not an HTML page), so the app can read it
-set_exception_handler(function ($e) {
-    error_log('Admin error: ' . $e->getMessage()); // see C:\xampp\apache\logs\error.log
-    echo json_encode(['success' => false, 'message' => 'Server error', 'data' => null]);
-});
-require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/admin_auth.php';
 require_once __DIR__ . '/waiting_list_helper.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Unauthorized. Please log in as admin.',
-        'data' => null
-    ]);
-    exit;
-}
+requireAdmin($conn);
 
-$input = json_decode(file_get_contents('php://input'), true);
+$input = json_decode(file_get_contents('php://input'), true) ?? [];
 
 $userId = trim($input['userId'] ?? '');
 $role = trim($input['role'] ?? '');
@@ -37,24 +23,27 @@ if ($userId === '' || !in_array($role, ['Student', 'Faculty'])) {
 $conn->begin_transaction();
 
 try {
-    if ($role === 'Student') {
-        // Save the email first, so the ban survives the deletion
-        $stmt = $conn->prepare("SELECT email FROM student WHERE student_id = ?");
-        $stmt->bind_param('s', $userId);
+    // Save the email first, so the ban survives the deletion (students and faculty)
+    $emailSql = ($role === 'Student')
+        ? "SELECT email FROM student WHERE student_id = ?"
+        : "SELECT email FROM facultymember WHERE faculty_id = ?";
+    $stmt = $conn->prepare($emailSql);
+    $stmt->bind_param('s', $userId);
+    $stmt->execute();
+    $user = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($user) {
+        $bannedEmail = strtolower($user['email']);
+        $stmt = $conn->prepare("INSERT IGNORE INTO banned_emails (email, role) VALUES (?, ?)");
+        $stmt->bind_param('ss', $bannedEmail, $role);
         $stmt->execute();
-        $student = $stmt->get_result()->fetch_assoc();
         $stmt->close();
+    }
 
-        if ($student) {
-            $stmt = $conn->prepare("INSERT IGNORE INTO banned_emails (email, role) VALUES (?, 'Student')");
-            $stmt->bind_param('s', $student['email']);
-            $stmt->execute();
-            $stmt->close();
-        }
-
+    if ($role === 'Student') {
         // Leave every waiting list first so the other students' positions stay in order
         removeStudentFromWaitingLists($conn, $userId);
-
         $stmt = $conn->prepare("DELETE FROM student WHERE student_id = ?");
     } else {
         $stmt = $conn->prepare("DELETE FROM facultymember WHERE faculty_id = ?");
@@ -67,22 +56,17 @@ try {
 
     if (!$deleted) {
         $conn->rollback();
-        echo json_encode([
-            'success' => false,
-            'message' => 'User not found',
-            'data' => null
-        ]);
+        echo json_encode(['success' => false, 'message' => 'User not found', 'data' => null]);
+        $conn->close();
         exit;
     }
 
     $conn->commit();
 } catch (Throwable $e) {
     $conn->rollback();
-    echo json_encode([
-        'success' => false,
-        'message' => 'Failed to delete user',
-        'data' => null
-    ]);
+    error_log('delete_user error: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Failed to delete user', 'data' => null]);
+    $conn->close();
     exit;
 }
 
@@ -91,3 +75,4 @@ echo json_encode([
     'message' => 'User deleted successfully',
     'data' => ['userId' => $userId, 'role' => $role]
 ]);
+$conn->close();

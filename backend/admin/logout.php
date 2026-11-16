@@ -1,7 +1,5 @@
 <?php
 header('Content-Type: application/json');
-session_start();
-$_SESSION = [];
-session_destroy();
-echo json_encode(['success' => true, 'message' => 'Logged out', 'data' => null]);
 
+// No session on the server: the app logs out by deleting the saved admin_id
+echo json_encode(['success' => true, 'message' => 'Logged out', 'data' => null]);

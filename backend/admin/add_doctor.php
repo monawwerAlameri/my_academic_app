@@ -1,26 +1,15 @@
 <?php
-
-
 header('Content-Type: application/json');
-
-// Any uncaught error is returned as JSON (not an HTML page), so the app can read it
-set_exception_handler(function ($e) {
-    error_log('Admin error: ' . $e->getMessage()); // see C:\xampp\apache\logs\error.log
-    echo json_encode(['success' => false, 'message' => 'Server error', 'data' => null]);
-});
-require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/admin_auth.php';
 require_once __DIR__ . '/admin_mail.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized. Please log in as admin.', 'data' => null]);
-    exit;
-}
+requireAdmin($conn);
 
-$input = json_decode(file_get_contents('php://input'), true);
+$input = json_decode(file_get_contents('php://input'), true) ?? [];
 
 $fullName = trim($input['fullName'] ?? '');
-$email = trim($input['email'] ?? '');
+$email = strtolower(trim($input['email'] ?? ''));
 $department = trim($input['department'] ?? '');
 
 if ($fullName === '' || $email === '' || $department === '') {
@@ -33,8 +22,20 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-if (strlen($fullName) > 100 || strlen($email) > 100 || strlen($department) > 100) {
+if (mb_strlen($fullName) > 100 || strlen($email) > 100 || mb_strlen($department) > 100) {
     echo json_encode(['success' => false, 'message' => 'One of the fields is too long', 'data' => null]);
+    exit;
+}
+
+// An e-mail that belonged to a deleted account cannot be used again
+$stmt = $conn->prepare("SELECT email FROM banned_emails WHERE email = ?");
+$stmt->bind_param('s', $email);
+$stmt->execute();
+$stmt->store_result();
+$banned = $stmt->num_rows > 0;
+$stmt->close();
+if ($banned) {
+    echo json_encode(['success' => false, 'message' => 'This email belongs to a deleted account', 'data' => null]);
     exit;
 }
 
@@ -89,3 +90,4 @@ if (!$emailSent) {
 }
 
 echo json_encode(['success' => true, 'message' => 'Doctor added successfully', 'data' => $data]);
+$conn->close();

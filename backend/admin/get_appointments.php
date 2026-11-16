@@ -1,23 +1,9 @@
 <?php
-
 header('Content-Type: application/json');
-
-// Any uncaught error is returned as JSON (not an HTML page), so the app can read it
-set_exception_handler(function ($e) {
-    error_log('Admin error: ' . $e->getMessage()); // see C:\xampp\apache\logs\error.log
-    echo json_encode(['success' => false, 'message' => 'Server error', 'data' => null]);
-});
-require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/admin_auth.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Unauthorized. Please log in as admin.',
-        'data' => null
-    ]);
-    exit;
-}
+requireAdmin($conn);
 
 $statusFilter = trim($_GET['status'] ?? '');
 // The old filters Pending / Confirmed now mean Booked
@@ -73,3 +59,4 @@ echo json_encode([
     'message' => 'Appointments retrieved successfully',
     'data' => $appointments
 ]);
+$conn->close();
