@@ -1,5 +1,5 @@
-
 import { BASE_URL } from './api';
+import { getAdminId } from './session';
 
 const ADMIN_URL = BASE_URL + '/admin';
 
@@ -29,7 +29,7 @@ export type AccountStatus = 'Active' | 'Suspended';
 export type AppointmentStatusApi = 'Pending' | 'Confirmed' | 'Cancelled' | 'Completed';
 
 export interface AdminLoginData { adminId: string; fullName: string; email: string }
-export interface AdminLoginStartData { email: string; expiresInSeconds: number; devCode?: string }
+export interface AdminLoginStartData { adminId: string; email: string; expiresInSeconds: number; devCode?: string }
 export interface ApiUser { userId: string; fullName: string; email: string; phoneNumber: string; role: string; accountStatus: string }
 export interface AddDoctorData { facultyId: string; fullName: string; department: string; email: string; temporaryPassword: string }
 export interface ApiAppointment {
@@ -58,7 +58,8 @@ export interface DoctorReviewItem { reviewId: number | string; reviewerName: str
 export interface DoctorReviewsData extends DoctorRatingSummary { reviews: DoctorReviewItem[] }
 
 async function request<T>(url: string, init?: RequestInit): Promise<ApiResponse<T>> {
-   const res = await fetch(url, { credentials: 'include', ...init });
+const sep = url.includes('?') ? '&' : '?';
+const res = await fetch(url + sep + 'admin_id=' + encodeURIComponent(getAdminId()), init);
   try {
     return JSON.parse(await res.text());
   } catch {
@@ -78,7 +79,7 @@ export const adminApi = {
   login: (username: string, password: string) =>
     post<AdminLoginStartData>(ADMIN_ENDPOINTS.login, { username, password }),
   verifyLogin: (code: string) =>
-    post<AdminLoginData>(ADMIN_ENDPOINTS.verifyLogin, { code }),
+  post<AdminLoginData>(ADMIN_ENDPOINTS.verifyLogin, { admin_id: getAdminId(), code }),
   logout: () => post<null>(ADMIN_ENDPOINTS.logout, {}),
   getUsers: () => request<ApiUser[]>(ADMIN_ENDPOINTS.getUsers),
 

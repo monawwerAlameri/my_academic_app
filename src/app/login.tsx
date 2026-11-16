@@ -15,7 +15,7 @@ import { useAppSettings } from '../context/AppSettingsContext';
 import { adminApi } from '../services/adminApi';
 import { facultyLogin, facultyVerify } from '../services/doctor';
 import { adminErrorKey, errorKey, retrySeconds } from '../services/errors';
-import { setFacultyId, setStudentId } from '../services/session';
+import { setAdminId, setFacultyId, setStudentId } from '../services/session';
 import { studentLogin, studentVerify } from '../services/student';
 import { commonStyles } from '../theme/styles';
 
@@ -125,6 +125,7 @@ export default function LoginScreen() {
       } else {
         const res = await adminApi.login(id, password);
         if (!res.success) {
+          setAdminId(res.data?.adminId ?? '');
           showAdminFailure(res);
           return;
         }

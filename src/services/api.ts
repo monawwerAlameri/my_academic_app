@@ -1,8 +1,7 @@
 
 
-// اكتبي هنا IP جهازك اللي يشتغل عليه XAMPP (من أمر ipconfig) ولا ترفعيه على GitHub
-export const SERVER_IP = 'MY_IP';
-export const BASE_URL = 'http://' + SERVER_IP + '/my_academic_app/backend';
+
+export const BASE_URL = 'https://peachpuff-toad-484133.hostingersite.com/backend'
 
 export class ApiError extends Error {
   code: string;
