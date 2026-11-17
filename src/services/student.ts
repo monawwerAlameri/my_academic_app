@@ -192,6 +192,7 @@ export interface NotificationItem {
 
 const notifTitleKey = (type: string) => {
   const s = (type ?? '').toLowerCase();
+  if (s.includes('start')) return 'notifStarted';
   if (s.includes('cancel')) return 'notifCancellation';
   if (s.includes('wait')) return 'notifWaitlist';
   if (s.includes('remind')) return 'notifReminder';

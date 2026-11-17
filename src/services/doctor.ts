@@ -1,6 +1,6 @@
+import { Attachment, PickedFile, appendFile, toAttachment } from '../utils/attachments';
 import { request, upload } from './api';
 import { getFacultyId } from './session';
-import { Attachment, PickedFile, appendFile, toAttachment } from '../utils/attachments';
 
 export type DayKey = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday';
 
@@ -273,4 +273,13 @@ export const sendFacultyMessage = async (studentId: string, text: string, file?:
   return upload<void>('/Faculty/send_message.php?faculty_id=' + encodeURIComponent(fid), form);
 };
 
-  
+  // ---------- تسجيل الدكتور ----------
+export const facultyOtpSend = (email: string) =>
+  request('/Faculty/send_otp.php', { method: 'POST', body: JSON.stringify({ email }) });
+
+export const facultyRegister = async (d: {
+  full_name: string; department: string; office_location: string; phone_number: string; email: string; password: string; code: string;
+}) => {
+  const res = await request<{ data: { faculty_id: string } }>('/Faculty/register.php', { method: 'POST', body: JSON.stringify(d) });
+  return res.data;
+};

@@ -12,6 +12,8 @@ import { commonStyles } from '../../theme/styles';
 
 const titleKey = (type: string) => {
   const s = (type ?? '').toLowerCase();
+  if (s.includes('start')) return 'notifStarted';
+  if (s.includes('remind')) return 'notifReminder';
   if (s.includes('cancel')) return 'notifCancellation';
   if (s.includes('book')) return 'notifBooking';
   if (s.includes('review')) return 'notifReview';

@@ -282,9 +282,9 @@ export default function LoginScreen() {
 
         {/* تسجيل الدكتور (الدكتور ينشئ حسابه بنفسه) */}
         <View style={[styles.footer, { marginTop: 10 }]}>
-          <Text style={[commonStyles.paragraph, { color: colors.primary }]}>{isRTL ? 'عضو هيئة تدريس؟' : 'Faculty member?'}</Text>
-          <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/faculty/register')}>
-            <Text style={[commonStyles.name, { color: colors.accent }]}> {isRTL ? 'سجّل حساب دكتور' : 'Register as doctor'}</Text>
+            <Text style={[commonStyles.paragraph, { color: colors.primary }]}>{isRTL ? 'هل أنت عضو هيئة تدريس؟' : 'Faculty member?'}</Text>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/faculty/register' as any)}>
+            <Text style={[commonStyles.name, { color: colors.accent }]}> {isRTL ? 'أنشئ حساب عضو هيئة التدريس' : 'Create a faculty account'}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
