@@ -1,0 +1,5 @@
+# مجلد المرفقات: ممنوع تشغيل أي سكربت هنا، حتى لو انرفع بالغلط
+<FilesMatch "\.(php|php[0-9]|phtml|phar|pl|py|cgi|sh|asp|aspx|jsp)$">
+    Require all denied
+</FilesMatch>
+Options -Indexes

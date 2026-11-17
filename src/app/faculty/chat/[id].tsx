@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { ChatAttachment, PickedFileChip } from '../../../components/ChatAttachment';
 import { DataState } from '../../../components/DataState';
 import { FacultyTabBar } from '../../../components/FacultyTabBar';
 import { useAppSettings } from '../../../context/AppSettingsContext';
@@ -20,44 +21,55 @@ import { useFetch } from '../../../hooks/useFetch';
 import { FacultyMessage, getFacultyMessages, sendFacultyMessage } from '../../../services/doctor';
 import { errorKey } from '../../../services/errors';
 import { commonStyles } from '../../../theme/styles';
-
-
-
-
+import { PickedFile, pickAttachment } from '../../../utils/attachments';
 
 export default function FacultyChatConversationScreen() {
   const { colors, t, isRTL } = useAppSettings();
   const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
   const [draft, setDraft] = useState('');
+  const [file, setFile] = useState<PickedFile | null>(null);
   const [sending, setSending] = useState(false);
   const { data: messages, loading, error, reload, silentReload } =
-  useFetch<FacultyMessage[]>(() => getFacultyMessages(id), [], [id]);
+    useFetch<FacultyMessage[]>(() => getFacultyMessages(id), [], [id]);
 
   useEffect(() => {
     const timer = setInterval(silentReload, 5000);
     return () => clearInterval(timer);
   }, [silentReload]);
 
-
-
   const reverse = isRTL && { flexDirection: 'row-reverse' as const };
 
+  // اختيار مرفق (الأنواع غير المسموحة مثل php تنرفض هنا وفي الباك)
+  const handlePick = async () => {
+    if (sending) return;
+    try {
+      const res = await pickAttachment();
+      if (!res) return;
+      if ('error' in res) {
+        Alert.alert(t('error'), t(('err_' + res.error) as any));
+        return;
+      }
+      setFile(res.file);
+    } catch {
+      Alert.alert(t('error'), t('err_UPLOAD_FAILED'));
+    }
+  };
+
   const handleSend = async () => {
-  const text = draft.trim();
-  if (text.length === 0 || sending) return;
-  setSending(true);
-  try {
-    await sendFacultyMessage(id, text);
-    setDraft('');
-    silentReload();
-  } catch (e) {
-    Alert.alert(t('error'), t(errorKey(e) as any));
-  } finally {
-    setSending(false);
-  }
-};
-
-
+    const text = draft.trim();
+    if ((text.length === 0 && !file) || sending) return;
+    setSending(true);
+    try {
+      await sendFacultyMessage(id, text, file ?? undefined);
+      setDraft('');
+      setFile(null);
+      silentReload();
+    } catch (e) {
+      Alert.alert(t('error'), t(errorKey(e) as any));
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -70,20 +82,19 @@ export default function FacultyChatConversationScreen() {
           <Text style={[commonStyles.name, { flex: 1, color: colors.primary }]} numberOfLines={1}>
             {name || t('chat')}
           </Text>
-
         </View>
 
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 10, gap: 14 }} showsVerticalScrollIndicator={false}>
-                <DataState
-  loading={loading}
-  error={error}
-  empty={messages.length === 0}
-  emptyText={t('startConversation')}
-  onRetry={reload}
->
-  {messages.map((message) => {
-
+          <DataState
+            loading={loading}
+            error={error}
+            empty={messages.length === 0}
+            emptyText={t('startConversation')}
+            onRetry={reload}
+          >
+            {messages.map((message) => {
               const isMe = message.from === 'me';
+              const textColor = isMe ? colors.white : colors.primary;
               return (
                 <View
                   key={message.id}
@@ -97,18 +108,27 @@ export default function FacultyChatConversationScreen() {
                         : { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderBottomLeftRadius: 4 },
                     ]}
                   >
-                  
-                      <Text style={[commonStyles.paragraph, { color: isMe ? colors.white : colors.primary }]}>{message.text}</Text>
-                    
+                    {message.attachment && <ChatAttachment attachment={message.attachment} color={textColor} />}
+                    {message.text.length > 0 && (
+                      <Text style={[commonStyles.paragraph, { color: textColor }, message.attachment && { marginTop: 8 }]}>{message.text}</Text>
+                    )}
                   </View>
                   <Text style={[styles.smallText, { color: colors.textSecondary, marginTop: 4 }]}>{message.time}</Text>
                 </View>
               );
-                  })}
-</DataState>
+            })}
+          </DataState>
         </ScrollView>
 
-                <View style={[styles.inputRow, reverse]}>
+        {file && <PickedFileChip name={file.name} onRemove={() => setFile(null)} colors={colors} isRTL={isRTL} />}
+        <View style={[styles.inputRow, reverse]}>
+          <TouchableOpacity
+            style={[styles.attachButton, { borderColor: colors.border, backgroundColor: colors.white }]}
+            activeOpacity={0.7}
+            onPress={handlePick}
+          >
+            <Ionicons name="attach" size={22} color={colors.primary} />
+          </TouchableOpacity>
           <TextInput
             style={[styles.input, { backgroundColor: colors.white, color: colors.primary, borderColor: colors.border, textAlign: isRTL ? 'right' : 'left' }]}
             placeholder={t('typeMessage')}
@@ -117,7 +137,7 @@ export default function FacultyChatConversationScreen() {
             onChangeText={setDraft}
           />
           <TouchableOpacity
-            style={[styles.sendButton, { backgroundColor: colors.primary }]}
+            style={[styles.sendButton, { backgroundColor: colors.primary, opacity: sending ? 0.6 : 1 }]}
             activeOpacity={0.7}
             onPress={handleSend}
           >
@@ -128,7 +148,7 @@ export default function FacultyChatConversationScreen() {
         <View style={{ height: 90 }} />
       </KeyboardAvoidingView>
 
-      <FacultyTabBar activeTab="chat" onTabPress={(key) => router.push(`/faculty/${key}` as any)} />
+      <FacultyTabBar activeTab="chat" onTabPress={(key) => router.push(('/faculty/' + key) as any)} />
     </SafeAreaView>
   );
 }
@@ -138,8 +158,6 @@ const styles = StyleSheet.create({
   bubble: { borderRadius: 16, paddingVertical: 10, paddingHorizontal: 14 },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 10 },
   input: { flex: 1, borderRadius: 24, height: 46, paddingHorizontal: 16, borderWidth: 1 },
+  attachButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   sendButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });
-
-
-

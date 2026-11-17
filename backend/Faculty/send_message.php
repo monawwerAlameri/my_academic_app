@@ -3,17 +3,31 @@
 header("Content-Type: application/json");
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/faculty_auth.php';
+require_once __DIR__ . '/../config/chat.php';
 
-$faculty_id = requireFacultyAuth($conn);
-
-$input       = json_decode(file_get_contents("php://input"), true) ?? [];
-$studentId   = trim($input["student_id"] ?? "");
-$messageText = trim($input["message_text"] ?? "");
-
-if ($studentId === "" || $messageText === "") {
-    facultyFail("ALL_FIELDS_REQUIRED", "student_id and message_text are required", null, $conn);
+// الطلب أكبر من post_max_size، فـ PHP تجاهله كامل
+if (
+    empty($_POST) && empty($_FILES) && !empty($_SERVER['CONTENT_LENGTH']) &&
+    stripos($_SERVER['CONTENT_TYPE'] ?? '', 'multipart/form-data') !== false
+) {
+    facultyFail("FILE_TOO_LARGE", "File is too large", null, $conn);
 }
 
+// faculty_id يجي في الرابط (?faculty_id=) أو داخل JSON
+$faculty_id = requireFacultyAuth($conn);
+
+// الرسالة اللي فيها ملف تجي form-data، والرسالة النصية تجي JSON
+$input       = !empty($_POST) ? $_POST : (json_decode(file_get_contents("php://input"), true) ?? []);
+$studentId   = trim($input["student_id"] ?? "");
+$messageText = trim($input["message_text"] ?? "");
+$hasFile     = isset($_FILES['file']) && $_FILES['file']['error'] !== UPLOAD_ERR_NO_FILE;
+
+if ($studentId === "") {
+    facultyFail("ALL_FIELDS_REQUIRED", "student_id is required", null, $conn);
+}
+if ($messageText === "" && !$hasFile) {
+    facultyFail("MESSAGE_REQUIRED", "Write a message or attach a file", null, $conn);
+}
 
 $stmt = $conn->prepare("SELECT student_id FROM student WHERE student_id = ?");
 $stmt->bind_param("s", $studentId);
@@ -25,29 +39,51 @@ if (!$studentExists) {
     facultyFail("STUDENT_NOT_FOUND", "Student not found", null, $conn);
 }
 
+$attachmentPath = null;
+$attachmentName = null;
+$attachmentType = null;
+
+if ($hasFile) {
+    $saved = saveChatAttachment($_FILES['file']);
+    if (isset($saved['error'])) {
+        facultyFail($saved['error'], "Attachment rejected", null, $conn);
+    }
+    $attachmentPath = $saved['path'];
+    $attachmentName = $saved['name'];
+    $attachmentType = $saved['type'];
+}
+
 $senderType = "Faculty";
 $sentAt     = date("Y-m-d H:i:s");
+$textValue  = ($messageText === "") ? null : $messageText;
 
 $stmt = $conn->prepare("
-    INSERT INTO message (student_id, faculty_id, sender_type, message_text, sent_at, is_read)
-    VALUES (?, ?, ?, ?, ?, 0)
+    INSERT INTO message (student_id, faculty_id, sender_type, message_text, attachment_path, attachment_name, attachment_type, sent_at, is_read)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
 ");
-$stmt->bind_param("sssss", $studentId, $faculty_id, $senderType, $messageText, $sentAt);
+$stmt->bind_param("ssssssss", $studentId, $faculty_id, $senderType, $textValue, $attachmentPath, $attachmentName, $attachmentType, $sentAt);
 
 if ($stmt->execute()) {
     $newId = $stmt->insert_id;
     $stmt->close();
     facultyOk("MESSAGE_SENT", [
-        "message_id"   => $newId,
-        "student_id"   => $studentId,
-        "faculty_id"   => $faculty_id,
-        "sender_type"  => $senderType,
-        "message_text" => $messageText,
-        "sent_at"      => $sentAt,
-        "is_read"      => 0
+        "message_id"      => $newId,
+        "student_id"      => $studentId,
+        "faculty_id"      => $faculty_id,
+        "sender_type"     => $senderType,
+        "message_text"    => $textValue,
+        "attachment_path" => $attachmentPath,
+        "attachment_name" => $attachmentName,
+        "attachment_type" => $attachmentType,
+        "sent_at"         => $sentAt,
+        "is_read"         => 0
     ], "Message sent successfully");
 } else {
     $stmt->close();
-    facultyFail("SAVE_FAILED", "Failed to send message", null, $conn);
+    // الرسالة ما انحفظت، فنحذف الملف اللي انرفع
+    if ($attachmentPath !== null) {
+        @unlink(__DIR__ . '/../' . $attachmentPath);
+    }
+    facultyFail("MESSAGE_FAILED", "Failed to send message", null, $conn);
 }
 $conn->close();
