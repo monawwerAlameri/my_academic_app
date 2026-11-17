@@ -27,7 +27,7 @@ export default function FacultyAboutScreen() {
         <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center', marginBottom: 24 }]}>Silah</Text>
 
         <View style={[commonStyles.panel, styles.card, { borderColor: colors.border }]}>
-          {['aboutP1', 'aboutP2', 'aboutP3'].map((key) => (
+          {['aboutP1', 'aboutP2'].map((key) => (
             <Text key={key} style={[commonStyles.paragraph, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>
               {t(key as any)}
             </Text>

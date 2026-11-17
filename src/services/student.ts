@@ -303,6 +303,8 @@ export const getProfile = async (): Promise<Profile> => {
   const d = await callAsStudent<any>('get_profile');
   return { fullName: d?.full_name ?? '', email: d?.email ?? '', phone: d?.phone_number ?? '' };
 };
+export const updatePhone = (phone: string) =>
+  callAsStudent('update_phone', { phone_number: phone });
 
 export const changePassword = (data: { currentPassword: string; newPassword: string }) =>
   callAsStudent('change_password', { current_password: data.currentPassword, new_password: data.newPassword });

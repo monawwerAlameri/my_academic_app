@@ -27,9 +27,8 @@ export default function AboutScreen() {
         <Text style={[styles.appName, { color: colors.primary }]}>Silah</Text>
 
         <View style={[commonStyles.panel, styles.card, { borderColor: colors.border }]}>
-          <Text style={[commonStyles.paragraph, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('aboutP1')}</Text>
+      <Text style={[commonStyles.paragraph, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('aboutP1')}</Text>
           <Text style={[commonStyles.paragraph, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('aboutP2')}</Text>
-          <Text style={[commonStyles.paragraph, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('aboutP3')}</Text>
           <Text style={[styles.version, { color: colors.textSecondary }]}>{t('version')}</Text>
         </View>
 

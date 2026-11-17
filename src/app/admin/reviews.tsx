@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AdminHeader } from '../../components/AdminHeader';
 import { AdminTabBar } from '../../components/AdminTabBar';
-import { DataState } from '../../components/DataState';
+import { DataState, EmptyState } from '../../components/DataState';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { useFetch } from '../../hooks/useFetch';
 import { adminApi, DoctorRatingSummary, DoctorReviewsData } from '../../services/adminApi';
@@ -127,7 +127,7 @@ export default function AdminReviews() {
               </View>
 
               {selected.reviews.length === 0 && (
-                <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noReviewsYet')}</Text>
+          <EmptyState text={t('noReviewsYet')} />
               )}
 
               {selected.reviews.map((r) => (

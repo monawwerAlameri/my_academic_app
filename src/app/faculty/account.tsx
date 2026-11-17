@@ -90,9 +90,7 @@ const handleSave = async () => {
           <View style={[commonStyles.avatarCircle, { backgroundColor: colors.primary }]}>
             <Ionicons name="person" size={40} color={colors.white} />
           </View>
-          <TouchableOpacity style={[commonStyles.changePhotoButton, { borderColor: colors.border }]} activeOpacity={0.7}>
-            <Text style={[commonStyles.changePhotoText, { color: colors.primary }]}>{t('changePhoto')}</Text>
-          </TouchableOpacity>
+          
         </View>
 
         <Text style={[commonStyles.sectionTitle, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>
@@ -125,17 +123,25 @@ const handleSave = async () => {
 }
 
 function Field({ label, value, onChangeText, keyboardType, secure, colors, isRTL }: any) {
+  const [show, setShow] = useState(false);
   return (
     <View style={commonStyles.field}>
       <Text style={[commonStyles.fieldLabel, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
-      <TextInput
-        style={[commonStyles.fieldInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
-        value={value}
-        onChangeText={onChangeText}
-        placeholderTextColor={colors.placeholder}
-        keyboardType={keyboardType}
-        secureTextEntry={secure}
-      />
+      <View style={{ justifyContent: 'center' }}>
+        <TextInput
+          style={[commonStyles.fieldInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.primary, textAlign: isRTL ? 'right' : 'left' }, secure && (isRTL ? { paddingLeft: 44 } : { paddingRight: 44 })]}
+          value={value}
+          onChangeText={onChangeText}
+          placeholderTextColor={colors.placeholder}
+          keyboardType={keyboardType}
+          secureTextEntry={secure && !show}
+        />
+        {secure && (
+          <TouchableOpacity onPress={() => setShow(!show)} activeOpacity={0.7} style={[{ position: 'absolute', padding: 4 }, isRTL ? { left: 10 } : { right: 10 }]}>
+            <Ionicons name={show ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.primary} />
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }

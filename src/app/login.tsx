@@ -81,7 +81,7 @@ export default function LoginScreen() {
   const reverse = isRTL && { flexDirection: 'row-reverse' as const };
 
   const { role, id } = detectRole(username);
-  const needsCode = true;
+  const needsCode = true; // كل الأدوار صار لها رمز تحقق (Faculty/login.php يرسل الرمز)
 
   const resetCodeStep = () => {
     setCodeSent(false);
@@ -119,10 +119,15 @@ export default function LoginScreen() {
         const d = await studentLogin(id, password);
         if (!d?.email) throw new Error('REQUEST_FAILED');
         setStudentEmail(d.email);
+        
+
       } else if (role === 'faculty') {
         const d = await facultyLogin(id, password);
-        setFacultyIdFromServer(d?.faculty_id ?? id);
+        if (!d?.email) throw new Error('REQUEST_FAILED');
+        setStudentEmail(d.email);
+        setFacultyIdFromServer((d as any).faculty_id ?? id);
       } else {
+
         const res = await adminApi.login(id, password);
         if (!res.success) {
           setAdminId(res.data?.adminId ?? '');

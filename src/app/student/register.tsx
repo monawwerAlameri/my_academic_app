@@ -153,7 +153,7 @@ export default function RegisterScreen() {
   const fields: any[] = [
     { label: t('fullName'), icon: 'person-outline', placeholder: t('enterFullName'), value: fullName, onChange: setFullName },
     { label: t('phoneNumber'), icon: 'call-outline', placeholder: t('enterPhone'), value: phone, onChange: (v: string) => setPhone(onlyDigits(v).slice(0, 10)), keyboardType: 'phone-pad', maxLength: 10 },
-    { label: t('email'), icon: 'mail-outline', placeholder: t('enterEmail'), value: email, onChange: (v: string) => { setEmail(v); setCodeSent(false); setVerifiedEmail(''); setCode(''); }, keyboardType: 'email-address', autoCapitalize: 'none', autoCorrect: false },
+    { label: t('email'), icon: 'mail-outline', placeholder: t('enterUniEmail'), value: email, onChange: (v: string) => { setEmail(v); setCodeSent(false); setVerifiedEmail(''); setCode(''); }, keyboardType: 'email-address', autoCapitalize: 'none', autoCorrect: false },
     { label: t('password'), icon: 'lock-closed-outline', placeholder: t('createPassword'), value: password, onChange: setPassword, secure: !showPassword, toggle: () => setShowPassword(!showPassword) },
     { label: t('confirmPassword'), icon: 'lock-closed-outline', placeholder: t('confirmYourPassword'), value: confirmPassword, onChange: setConfirmPassword, secure: !showConfirmPassword, toggle: () => setShowConfirmPassword(!showConfirmPassword) },
     { label: t('verificationCode'), icon: 'shield-checkmark-outline', placeholder: t('enterVerificationCode'), value: code, onChange: (v: string) => setCode(onlyDigits(v).slice(0, 6)), keyboardType: 'number-pad', maxLength: 6, action: lock.remaining > 0 ? lock.label : t('sendCode'), onAction: handleSendCode, actionDisabled: loading || lock.remaining > 0 },
@@ -213,9 +213,9 @@ export default function RegisterScreen() {
           <Ionicons name={agreed ? 'checkbox' : 'square-outline'} size={24} color={colors.primary} />
           <Text style={[commonStyles.paragraph, align, { flex: 1, color: colors.primary }]}>
             {t('agreeToTerms')}{' '}
-            <Text style={{ color: colors.accent, fontWeight: '600' }}>{t('termsOfService')}</Text>
+            <Text onPress={() => router.push({ pathname: '/terms', params: { type: 'terms' } } as any)} style={{ color: colors.accent, fontWeight: '600', textDecorationLine: 'underline' }}>{t('termsOfService')}</Text>
             {' '}{t('andWord')}{' '}
-            <Text style={{ color: colors.accent, fontWeight: '600' }}>{t('privacyPolicy')}</Text>
+            <Text onPress={() => router.push({ pathname: '/terms', params: { type: 'privacy' } } as any)} style={{ color: colors.accent, fontWeight: '600', textDecorationLine: 'underline' }}>{t('privacyPolicy')}</Text>
           </Text>
         </TouchableOpacity>
 
