@@ -54,7 +54,7 @@ if ($code === '') {
 if (mb_strlen($full_name) > 100 || mb_strlen($department) > 100 || mb_strlen($office_location) > 255) {
     registerFail("ALL_FIELDS_REQUIRED");
 }
-if (!preg_match('/^[a-z0-9._%+-]+@uoh\.edu\.sa$/', $email) || preg_match('/^s[0-9]+@uoh\.edu\.sa$/', $email)) {
+if (!filter_var($email, FILTER_VALIDATE_EMAIL) || preg_match('/^s[0-9]+@uoh\.edu\.sa$/', $email)) {
     registerFail("INVALID_FACULTY_EMAIL");
 }
 if (!preg_match('/^05[0-9]{8}$/', $phone_number)) {

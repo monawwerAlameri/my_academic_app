@@ -12,8 +12,7 @@ if ($email === '') {
     exit;
 }
 
-// بريد الجامعة فقط (@uoh.edu.sa)، ومو بصيغة بريد الطالب (s + أرقام)
-if (!preg_match('/^[a-z0-9._%+-]+@uoh\.edu\.sa$/', $email) || preg_match('/^s[0-9]+@uoh\.edu\.sa$/', $email)) {
+if (!filter_var($email, FILTER_VALIDATE_EMAIL) || preg_match('/^s[0-9]+@uoh\.edu\.sa$/', $email)) {
     echo json_encode(["success" => false, "code" => "INVALID_FACULTY_EMAIL"]);
     exit;
 }

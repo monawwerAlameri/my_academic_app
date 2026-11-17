@@ -47,8 +47,7 @@ function useCountdown() {
   return { remaining, start, label: mm + ':' + ss };
 }
 
-// بريد الجامعة للدكتور: ينتهي بـ @uoh.edu.sa ومو بصيغة بريد الطالب (s + أرقام). نفس شرط الباك
-const FACULTY_EMAIL = /^[a-z0-9._%+-]+@uoh\.edu\.sa$/;
+const FACULTY_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const STUDENT_EMAIL = /^s\d+@uoh\.edu\.sa$/;
 const PHONE = /^05\d{8}$/;
 
