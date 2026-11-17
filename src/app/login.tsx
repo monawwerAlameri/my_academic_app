@@ -19,7 +19,6 @@ import { setAdminId, setFacultyId, setStudentId } from '../services/session';
 import { studentLogin, studentVerify } from '../services/student';
 import { commonStyles } from '../theme/styles';
 
-// ---- أدوات مساعدة (داخل الملف بدل ملفات جديدة) ----
 // يحوّل الأرقام العربية/الفارسية إلى إنجليزية، لأن الباك يقبل الإنجليزية فقط
 const toEnglishDigits = (s: string) =>
   s
@@ -51,7 +50,6 @@ function useCountdown() {
   return { remaining, start, label: `${mm}:${ss}` };
 }
 
-
 type Role = 'student' | 'faculty' | 'admin';
 
 // نحدد الدور من اللي كتبه المستخدم بالخانة الأولى:
@@ -74,6 +72,7 @@ export default function LoginScreen() {
   const [codeSent, setCodeSent] = useState(false);
   const [studentEmail, setStudentEmail] = useState('');
   const [facultyIdFromServer, setFacultyIdFromServer] = useState('');
+  const [adminIdFromServer, setAdminIdFromServer] = useState('');
   const [loading, setLoading] = useState(false);
   const lock = useCountdown();
 
@@ -130,10 +129,10 @@ export default function LoginScreen() {
 
         const res = await adminApi.login(id, password);
         if (!res.success) {
-          setAdminId(res.data?.adminId ?? '');
           showAdminFailure(res);
           return;
         }
+        setAdminIdFromServer(res.data?.adminId ?? id);
         // رمز التجربة يظهر فقط أثناء التطوير (ADMIN_OTP_DEV_MODE)، وما يظهر بالنسخة النهائية
         if (__DEV__ && res.data?.devCode) setCode(res.data.devCode);
       }
@@ -146,7 +145,7 @@ export default function LoginScreen() {
     }
   };
 
-  // زر الدخول: يتحقق من الرمز (الدكتورة تدخل مباشرة)
+  // زر الدخول: يتحقق من الرمز
   const handleSignIn = async () => {
     if (loading) return;
     if (!id || !password) {
@@ -174,11 +173,12 @@ export default function LoginScreen() {
         setFacultyId(d.faculty_id);
         router.replace('/faculty/home');
       } else {
-        const res = await adminApi.verifyLogin(code);
-        if (!res.success) {
+        const res = await adminApi.verifyLogin(adminIdFromServer || id, code);
+        if (!res.success || !res.data) {
           showAdminFailure(res);
           return;
         }
+        setAdminId(res.data.adminId);
         router.replace('/admin/home');
       }
     } catch (e) {
@@ -224,7 +224,7 @@ export default function LoginScreen() {
           <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
         </View>
 
-        <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Silah</Text>
+        <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Academic{'\n'}Booking</Text>
         <Text style={[commonStyles.headerSubtitle, { color: colors.primary, textAlign: 'center', marginTop: 16 }]}>{t('signInSubtitle')}</Text>
 
         {fields.map((f) => (
@@ -277,6 +277,14 @@ export default function LoginScreen() {
           <Text style={[commonStyles.paragraph, { color: colors.primary }]}>{t('noAccount')}</Text>
           <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/student/register')}>
             <Text style={[commonStyles.name, { color: colors.accent }]}> {t('signUp')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* تسجيل الدكتور (الدكتور ينشئ حسابه بنفسه) */}
+        <View style={[styles.footer, { marginTop: 10 }]}>
+          <Text style={[commonStyles.paragraph, { color: colors.primary }]}>{isRTL ? 'عضو هيئة تدريس؟' : 'Faculty member?'}</Text>
+          <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/faculty/register')}>
+            <Text style={[commonStyles.name, { color: colors.accent }]}> {isRTL ? 'سجّل حساب دكتور' : 'Register as doctor'}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
