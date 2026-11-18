@@ -37,7 +37,7 @@ try {
     $changed = $stmt->affected_rows > 0;
     $stmt->close();
 
-    // 0 affected rows = user not found OR already in this status
+    
     if (!$changed) {
         $checkSql = ($role === 'Student')
             ? "SELECT student_id FROM student WHERE student_id = ?"
@@ -57,9 +57,7 @@ try {
         }
     }
 
-    // ---------- A student has just been suspended ----------
-    // Leave the waiting lists, cancel her Booked appointments,
-    // and give every freed slot that has not started yet to the first waiting student
+    
     if ($changed && $role === 'Student' && $accountStatus === 'Suspended') {
         removeStudentFromWaitingLists($conn, $userId);
 
@@ -76,7 +74,7 @@ try {
         $stmt->close();
 
         foreach ($appointments as $a) {
-            // Same lock used by booking and cancelling, so the waiting list is not changed at the same time
+           
             $lock = $conn->prepare("SELECT faculty_id FROM facultymember WHERE faculty_id = ? FOR UPDATE");
             $lock->bind_param('s', $a['faculty_id']);
             $lock->execute();
@@ -100,9 +98,7 @@ try {
         }
     }
 
-    // ---------- A doctor has just been suspended ----------
-    // Cancel all Booked appointments (started or not), send a generic cancellation notice to each student,
-    // and delete the doctor's waiting list without notifications
+    
     if ($changed && $role === 'Faculty' && $accountStatus === 'Suspended') {
         $stmt = $conn->prepare("SELECT full_name FROM facultymember WHERE faculty_id = ? FOR UPDATE");
         $stmt->bind_param('s', $userId);
@@ -122,7 +118,7 @@ try {
             $stmt->execute();
             $stmt->close();
 
-            // Generic notice: no "by" and no "reason", so the suspension is not mentioned
+            
             $type  = "Cancellation";
             $notif = $conn->prepare("INSERT INTO notification (user_id, notification_type, message, notification_time, appointment_id) VALUES (?, ?, ?, ?, ?)");
             foreach ($appointments as $a) {

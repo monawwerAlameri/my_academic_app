@@ -23,7 +23,7 @@ if ($userId === '' || !in_array($role, ['Student', 'Faculty'])) {
 $conn->begin_transaction();
 
 try {
-    // Save the email first, so the ban survives the deletion (students and faculty)
+    
     $emailSql = ($role === 'Student')
         ? "SELECT email FROM student WHERE student_id = ?"
         : "SELECT email FROM facultymember WHERE faculty_id = ?";
@@ -42,7 +42,7 @@ try {
     }
 
     if ($role === 'Student') {
-        // Leave every waiting list first so the other students' positions stay in order
+     
         removeStudentFromWaitingLists($conn, $userId);
         $stmt = $conn->prepare("DELETE FROM student WHERE student_id = ?");
     } else {

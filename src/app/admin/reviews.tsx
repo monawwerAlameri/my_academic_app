@@ -50,7 +50,6 @@ export default function AdminReviews() {
   let content = null;
 
   if (selectedId === null) {
-    // ---------- قائمة الدكاترة ----------
     const doctorCards = doctors.map((d) => {
       const rating = d.averageRating ?? 0;
       return (
@@ -98,7 +97,6 @@ export default function AdminReviews() {
       </View>
     );
   } else {
-    // ---------- تقييمات دكتور واحد ----------
     const rating = selected?.averageRating ?? 0;
 
     content = (

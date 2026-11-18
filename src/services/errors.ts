@@ -32,7 +32,7 @@ export const errorKey = (e: unknown) => {
   return KNOWN.includes(code) ? `err_${code}` : 'somethingWentWrong';
 };
 
-// ملفات الأدمن ترجع نص رسالة (message) وليس كود، فنحوّل الرسائل المعروفة إلى أكواد
+
 const ADMIN_MESSAGES: Record<string, string> = {
   'Username and password are required': 'LOGIN_FIELDS_REQUIRED',
   'Invalid username or password': 'INVALID_CREDENTIALS',

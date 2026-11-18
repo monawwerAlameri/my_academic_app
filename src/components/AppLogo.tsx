@@ -1,6 +1,6 @@
   import { Image } from 'react-native';
 
-// شعار صلة بخلفية شفافة، يناسب الوضع الفاتح والداكن
+
 export function AppLogo() {
   return (
     <Image

@@ -17,7 +17,6 @@ if (empty($waiting_id)) {
 }
 requireActiveStudent($conn, $student_id); 
 
-// The waiting-list entry must belong to this student
 $stmt = $conn->prepare("SELECT faculty_id FROM waitinglist WHERE waiting_id = ? AND student_id = ?");
 $stmt->bind_param("is", $waiting_id, $student_id);
 $stmt->execute();
@@ -35,14 +34,12 @@ $faculty_id = $entry['faculty_id'];
 $conn->begin_transaction();
 
 try {
-    // Lock the faculty row so the queue is not changed by another request at the same time
     $lockStmt = $conn->prepare("SELECT faculty_id FROM facultymember WHERE faculty_id = ? FOR UPDATE");
     $lockStmt->bind_param("s", $faculty_id);
     $lockStmt->execute();
     $lockStmt->get_result();
     $lockStmt->close();
 
-    // Read the entry again after the lock to get its current position
     $readStmt = $conn->prepare("SELECT requested_time, requested_end_time, queue_position FROM waitinglist WHERE waiting_id = ? AND student_id = ?");
     $readStmt->bind_param("is", $waiting_id, $student_id);
     $readStmt->execute();
@@ -69,7 +66,6 @@ try {
         exit;
     }
 
-    // Everyone behind her on the same slot moves one position forward
     $shiftStmt = $conn->prepare("
         UPDATE waitinglist
         SET queue_position = queue_position - 1

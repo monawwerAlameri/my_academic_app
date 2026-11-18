@@ -2,7 +2,6 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
-// Booked appointments whose end time has passed become Completed
 $complete_now = date("Y-m-d H:i:s");
 $completeStmt = $conn->prepare("UPDATE appointment SET status = 'Completed' WHERE status = 'Booked' AND CONCAT(appointment_date, ' ', appointment_end_time) <= ?");
 $completeStmt->bind_param("s", $complete_now);
@@ -54,7 +53,6 @@ if ($appointment['status'] != 'Booked') {
     $conn->close();
     exit;
 }
-// Cancellation is closed in the last 30 minutes before the appointment (and after it starts)
 $cancel_deadline = strtotime($appointment['appointment_date'] . ' ' . $appointment['appointment_time']) - (30 * 60);
 if (time() > $cancel_deadline) {
     echo json_encode(["success" => false, "code" => "CANCEL_TOO_LATE"]);
@@ -70,7 +68,6 @@ $notification_type = "Cancellation";
 $student_message   = json_encode(["doctor" => $appointment['doctor_name'], "date" => $appointment['appointment_date'], "time" => $appointment['appointment_time'], "by" => "student"], JSON_UNESCAPED_UNICODE);
 $doctor_message    = json_encode(["student" => $appointment['student_name'], "date" => $appointment['appointment_date'], "time" => $appointment['appointment_time'], "by" => "student"], JSON_UNESCAPED_UNICODE);
 
-// The slot of this appointment, in the same format used by the waiting list
 $slot_start   = $appointment['appointment_date'] . ' ' . $appointment['appointment_time'];
 $slot_end     = $appointment['appointment_date'] . ' ' . $appointment['appointment_end_time'];
 
@@ -78,7 +75,6 @@ $slot_end     = $appointment['appointment_date'] . ' ' . $appointment['appointme
 $conn->begin_transaction();
 
 try {
-    // Lock the faculty row so the waiting list is not changed by another request at the same time
     $lockStmt = $conn->prepare("SELECT faculty_id FROM facultymember WHERE faculty_id = ? FOR UPDATE");
     $lockStmt->bind_param("s", $faculty_id);
     $lockStmt->execute();
@@ -108,7 +104,6 @@ try {
     $notifStmt->close();
 
    
-        // First student in the waiting list of this slot
         $firstStmt = $conn->prepare("
             SELECT
                 waitinglist.waiting_id,
@@ -131,7 +126,6 @@ try {
         $firstStmt->close();
 
         if ($first) {
-            // Location comes from the faculty schedule for the type the waiting student chose
             $day_name = date('l', strtotime($appointment['appointment_date']));
             $locStmt = $conn->prepare("
                 SELECT location
@@ -148,20 +142,17 @@ try {
             $locStmt->close();
 
             if ($slot) {
-                // Automatic booking for the first student in the waiting list
                 $insertStmt = $conn->prepare("INSERT INTO appointment (student_id, faculty_id, appointment_date, appointment_time, appointment_end_time, appointment_type, consultation_type, status, location) VALUES (?, ?, ?, ?, ?, ?, ?, 'Booked', ?)");
                 $insertStmt->bind_param("ssssssss", $first['student_id'], $faculty_id, $appointment['appointment_date'], $appointment['appointment_time'], $appointment['appointment_end_time'], $first['appointment_type'], $first['consultation_type'], $slot['location']);
                 $insertStmt->execute();
                 $new_appointment_id = $conn->insert_id;
                 $insertStmt->close();
 
-                // Remove her from the waiting list
                 $removeStmt = $conn->prepare("DELETE FROM waitinglist WHERE waiting_id = ?");
                 $removeStmt->bind_param("i", $first['waiting_id']);
                 $removeStmt->execute();
                 $removeStmt->close();
 
-                // Everyone behind her moves one position forward
                 $shiftStmt = $conn->prepare("
                     UPDATE waitinglist
                     SET queue_position = queue_position - 1
@@ -172,7 +163,6 @@ try {
                 $shiftStmt->execute();
                 $shiftStmt->close();
 
-                // Booking confirmation for her and for the faculty (same as a normal booking)
                 $confirm_type     = "Booking Confirmation";
                 $new_student_msg  = json_encode(["doctor" => $appointment['doctor_name'], "date" => $appointment['appointment_date'], "time" => $appointment['appointment_time']], JSON_UNESCAPED_UNICODE);
                 $new_doctor_msg   = json_encode(["student" => $first['waiting_student_name'], "date" => $appointment['appointment_date'], "time" => $appointment['appointment_time']], JSON_UNESCAPED_UNICODE);

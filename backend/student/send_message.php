@@ -4,7 +4,6 @@ require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/chat.php';
 header('Content-Type: application/json');
 
-// The request is bigger than post_max_size, so PHP dropped all of it
 if (
     empty($_POST) && empty($_FILES) && !empty($_SERVER['CONTENT_LENGTH']) &&
     stripos($_SERVER['CONTENT_TYPE'] ?? '', 'multipart/form-data') !== false
@@ -13,7 +12,6 @@ if (
     exit;
 }
 
-// A message with a file comes as form-data, a text-only message can also come as JSON
 $data = !empty($_POST) ? $_POST : json_decode(file_get_contents("php://input"), true);
 $student_id   = $data['student_id'] ?? '';
 $faculty_id   = $data['faculty_id'] ?? '';
@@ -57,7 +55,6 @@ if ($facultyFound == 0) {
     exit;
 }
 requireActiveFaculty($conn, $faculty_id);
-// Chat exists if there are messages between them, or an Online appointment that already started
 if (!chatExists($conn, $student_id, $faculty_id)) {
     echo json_encode(["success" => false, "code" => "CHAT_NOT_ALLOWED"]);
     $conn->close();
@@ -83,7 +80,6 @@ if ($has_file) {
         exit;
     }
 
-    // Only these file types are allowed (anything else, like PHP, is rejected)
     $allowed_files = [
         'jpg' => 'image', 'jpeg' => 'image', 'png' => 'image',
         'mp4' => 'video',
@@ -104,7 +100,6 @@ if ($has_file) {
         exit;
     }
 
-    // The file is saved with a random name, so nobody can guess it or upload a script
     $upload_dir = __DIR__ . '/../uploads/chat/';
     if (!is_dir($upload_dir) && !mkdir($upload_dir, 0777, true)) {
         echo json_encode(["success" => false, "code" => "UPLOAD_FAILED"]);
@@ -144,7 +139,6 @@ try {
         ]
     ]);
 } catch (Throwable $e) {
-    // The message was not saved, so the uploaded file is removed too
     if ($attachment_path !== null) {
         @unlink(__DIR__ . '/../' . $attachment_path);
     }

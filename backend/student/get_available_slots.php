@@ -35,7 +35,6 @@ $today = date('Y-m-d');
 $now_time = date('H:i:s');
 $last_day = date('Y-m-d', strtotime('+30 days'));
 
-// Weekly template of this faculty for the requested type
 $stmt = $conn->prepare("
     SELECT day_of_week, start_time, end_time, location
     FROM schedule
@@ -51,7 +50,6 @@ while ($row = $result->fetch_assoc()) {
 }
 $stmt->close();
 
-// Dates closed by the faculty inside the window
 $stmt = $conn->prepare("
     SELECT closed_date
     FROM closed_date
@@ -66,7 +64,6 @@ while ($row = $result->fetch_assoc()) {
 }
 $stmt->close();
 
-// Booked appointments of this faculty inside the window
 $stmt = $conn->prepare("
     SELECT appointment_date, appointment_time, appointment_end_time
     FROM appointment
@@ -81,7 +78,6 @@ while ($row = $result->fetch_assoc()) {
 }
 $stmt->close();
 
-// Build the slots day by day
 $slots = [];
 for ($i = 0; $i <= 30; $i++) {
     $date = date('Y-m-d', strtotime("+$i days"));
@@ -97,12 +93,10 @@ for ($i = 0; $i <= 30; $i++) {
             continue;
         }
 
-        // Skip slots that already started today
         if ($date === $today && $row['start_time'] <= $now_time) {
             continue;
         }
 
-        // Full if a Booked appointment overlaps this slot on the same date
         $is_full = false;
         foreach ($booked as $b) {
             if (

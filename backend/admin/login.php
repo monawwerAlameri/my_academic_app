@@ -4,8 +4,6 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/admin_auth.php';
 require_once __DIR__ . '/../config/mailer.php';
 
-// true  = do NOT send an email, return the code in the response (for Postman testing)
-// false = send the real email. MUST be false in the final version.
 const ADMIN_OTP_DEV_MODE = false;
 
 $input = json_decode(file_get_contents('php://input'), true) ?? [];

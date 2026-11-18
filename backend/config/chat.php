@@ -1,8 +1,6 @@
 <?php
-// config/chat.php
 
-// هل المحادثة موجودة بين الطالب والدكتور؟
-// موجودة إذا: فيه أي رسالة بينهم، أو فيه موعد Online بدأ (Booked أو Completed)
+
 function chatExists($conn, $student_id, $faculty_id) {
     $now = date("Y-m-d H:i:s");
     $stmt = $conn->prepare("
@@ -60,7 +58,7 @@ function saveChatAttachment($file) {
     if (!isset($allowed_files[$extension])) {
         return ['error' => 'INVALID_FILE_TYPE'];
     }
-    // الصورة لازم تكون صورة حقيقية، مو ملف ثاني اسمه .jpg
+    
     if ($allowed_files[$extension] === 'image' && @getimagesize($file['tmp_name']) === false) {
         return ['error' => 'INVALID_FILE_TYPE'];
     }
@@ -70,7 +68,7 @@ function saveChatAttachment($file) {
         return ['error' => 'UPLOAD_FAILED'];
     }
 
-    // اسم عشوائي، عشان ما أحد يقدر يخمّن رابط الملف
+    
     $stored_name = bin2hex(random_bytes(16)) . '.' . $extension;
     if (!move_uploaded_file($file['tmp_name'], $upload_dir . $stored_name)) {
         return ['error' => 'UPLOAD_FAILED'];

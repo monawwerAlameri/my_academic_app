@@ -5,7 +5,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/faculty_auth.php';
 require_once __DIR__ . '/../config/chat.php';
 
-// الطلب أكبر من post_max_size، فـ PHP تجاهله كامل
+
 if (
     empty($_POST) && empty($_FILES) && !empty($_SERVER['CONTENT_LENGTH']) &&
     stripos($_SERVER['CONTENT_TYPE'] ?? '', 'multipart/form-data') !== false
@@ -13,10 +13,10 @@ if (
     facultyFail("FILE_TOO_LARGE", "File is too large", null, $conn);
 }
 
-// faculty_id يجي في الرابط (?faculty_id=) أو داخل JSON
+
 $faculty_id = requireFacultyAuth($conn);
 
-// الرسالة اللي فيها ملف تجي form-data، والرسالة النصية تجي JSON
+
 $input       = !empty($_POST) ? $_POST : (json_decode(file_get_contents("php://input"), true) ?? []);
 $studentId   = trim($input["student_id"] ?? "");
 $messageText = trim($input["message_text"] ?? "");
@@ -80,7 +80,7 @@ if ($stmt->execute()) {
     ], "Message sent successfully");
 } else {
     $stmt->close();
-    // الرسالة ما انحفظت، فنحذف الملف اللي انرفع
+
     if ($attachmentPath !== null) {
         @unlink(__DIR__ . '/../' . $attachmentPath);
     }

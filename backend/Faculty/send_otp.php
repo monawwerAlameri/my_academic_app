@@ -17,7 +17,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL) || preg_match('/^s[0-9]+@uoh\.edu
     exit;
 }
 
-// البريد مسجّل من قبل لدكتور
+
 $stmt = $conn->prepare("SELECT faculty_id FROM facultymember WHERE email = ?");
 $stmt->bind_param("s", $email);
 $stmt->execute();
@@ -29,7 +29,7 @@ if ($exists) {
     exit;
 }
 
-// بريد حساب محذوف ما يقدر يسجّل مرة ثانية
+
 $stmt = $conn->prepare("SELECT email FROM banned_emails WHERE email = ?");
 $stmt->bind_param("s", $email);
 $stmt->execute();

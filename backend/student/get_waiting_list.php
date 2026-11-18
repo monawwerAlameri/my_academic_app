@@ -2,7 +2,6 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
-// Waiting lists of appointment times that already started are removed
 $clean_now = date("Y-m-d H:i:s");
 $cleanStmt = $conn->prepare("DELETE FROM waitinglist WHERE requested_time <= ?");
 $cleanStmt->bind_param("s", $clean_now);

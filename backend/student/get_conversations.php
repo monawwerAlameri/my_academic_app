@@ -12,8 +12,7 @@ if (empty($student_id)) {
 }
 requireActiveStudent($conn, $student_id);
 
-// Every doctor the student has an Online appointment with that already started (this is what opens a chat)
-// The chat with a running Online appointment right now (is_now) comes first, then the newest activity
+
 $now = date("Y-m-d H:i:s");
 
 $stmt = $conn->prepare("

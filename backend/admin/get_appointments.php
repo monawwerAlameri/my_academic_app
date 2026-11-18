@@ -6,7 +6,7 @@ require_once __DIR__ . '/admin_auth.php';
 requireAdmin($conn);
 
 $statusFilter = trim($_GET['status'] ?? '');
-// The old filters Pending / Confirmed now mean Booked
+
 if ($statusFilter === 'Pending' || $statusFilter === 'Confirmed') {
     $statusFilter = 'Booked';
 }

@@ -27,7 +27,7 @@ function sendAdminMail(string $toEmail, string $toName, string $subject, string 
         $mail->send();
         return true;
     } catch (MailException $e) {
-        error_log('Admin mail error: ' . $mail->ErrorInfo); // see C:\xampp\apache\logs\error.log
+        error_log('Admin mail error: ' . $mail->ErrorInfo); 
         return false;
     }
 }
