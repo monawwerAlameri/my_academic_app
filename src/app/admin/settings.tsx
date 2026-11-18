@@ -119,11 +119,11 @@ export default function SettingsScreen() {
         </TouchableOpacity>
 
         {/* Watermark Logo */}
-        <View style={styles.watermarkWrapper}>
+        <View style={{ alignItems: 'center', marginTop: 50, opacity: 0.18 }}>
           <View style={commonStyles.logoContainer}>
             <AppLogo />
           </View>
-          <Text style={[styles.watermarkText, { color: colors.primary }]}>Silah</Text>
+          <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Silah</Text>
         </View>
 
         <View style={{ height: 90 }} />
