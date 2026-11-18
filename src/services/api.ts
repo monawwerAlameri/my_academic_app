@@ -10,7 +10,7 @@ export class ApiError extends Error {
   }
 }
 
-// يقرأ رد السيرفر ويحوّله لـ JSON، ويرمي خطأ بكود الباك إذا success = false
+
 const readResponse = async <T>(res: Response): Promise<T> => {
   const text = await res.text();
   let json: any;

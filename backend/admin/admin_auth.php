@@ -1,8 +1,5 @@
 <?php
-// admin/admin_auth.php
-// 1) Any uncaught error in an admin file is returned as JSON with "message" (the shape the admin app reads).
-//    This file must be required AFTER config/database.php, so this handler replaces the one in database.php.
-// 2) requireAdmin(): the request must carry an admin_id that exists in the admin table.
+
 
 set_exception_handler(function ($e) {
     error_log('Admin error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());

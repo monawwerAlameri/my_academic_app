@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Attachment } from '../utils/attachments';
 
-// يعرض المرفق داخل فقاعة الرسالة: الصورة تطلع مصغّرة، وباقي الملفات أيقونة مع الاسم. الضغط يفتح الملف
 export function ChatAttachment({ attachment, color }: { attachment: Attachment; color: string }) {
   const open = () => { Linking.openURL(attachment.url).catch(() => {}); };
 

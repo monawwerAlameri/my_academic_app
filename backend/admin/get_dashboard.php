@@ -5,7 +5,7 @@ require_once __DIR__ . '/admin_auth.php';
 
 requireAdmin($conn);
 
-$now = date('Y-m-d H:i:s'); // PHP time zone (Asia/Riyadh, set in database.php), not the MySQL server's
+$now = date('Y-m-d H:i:s'); 
 
 $studentCount = (int) $conn->query("SELECT COUNT(*) AS c FROM student")->fetch_assoc()['c'];
 $facultyCount = (int) $conn->query("SELECT COUNT(*) AS c FROM facultymember")->fetch_assoc()['c'];
