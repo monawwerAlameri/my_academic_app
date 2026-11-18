@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { AppLogo } from '../../components/AppLogo';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { errorKey, retrySeconds } from '../../services/errors';
 import { studentOtpSend, studentRegister, studentVerify } from '../../services/student';
@@ -163,9 +164,7 @@ export default function RegisterScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={[commonStyles.logoContainer, { alignSelf: 'center' }]}>
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.primary, top: 0 }]} />
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
+          <AppLogo />
         </View>
 
         <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Silah</Text>
@@ -191,7 +190,7 @@ export default function RegisterScreen() {
               />
               {f.toggle && (
                 <TouchableOpacity onPress={f.toggle}>
-                  <Ionicons name={f.secure ? 'eye-outline' : 'eye-off-outline'} size={22} color={colors.primary} />
+                  <Ionicons name={f.secure ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.primary} />
                 </TouchableOpacity>
               )}
               {f.action && (

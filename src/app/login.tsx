@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { AppLogo } from '../components/AppLogo';
 import { useAppSettings } from '../context/AppSettingsContext';
 import { adminApi } from '../services/adminApi';
 import { facultyLogin, facultyVerify } from '../services/doctor';
@@ -219,12 +220,10 @@ export default function LoginScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={[commonStyles.logoContainer, { alignSelf: 'center' }]}>
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.primary, top: 0 }]} />
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
+          <AppLogo />
         </View>
 
-        <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Academic{'\n'}Booking</Text>
+        <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Silah</Text>
         <Text style={[commonStyles.headerSubtitle, { color: colors.primary, textAlign: 'center', marginTop: 16 }]}>{t('signInSubtitle')}</Text>
 
         {fields.map((f) => (
@@ -246,7 +245,7 @@ export default function LoginScreen() {
               />
               {f.toggle && (
                 <TouchableOpacity onPress={f.toggle} activeOpacity={0.7}>
-                  <Ionicons name={f.secure ? 'eye-outline' : 'eye-off-outline'} size={22} color={colors.primary} />
+                  <Ionicons name={f.secure ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.primary} />
                 </TouchableOpacity>
               )}
               {f.action && (

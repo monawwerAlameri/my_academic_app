@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppLogo } from '../../components/AppLogo';
 import { FacultyTabBar } from '../../components/FacultyTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { commonStyles } from '../../theme/styles';
@@ -19,9 +20,7 @@ export default function FacultyAboutScreen() {
         </View>
 
         <View style={[commonStyles.logoContainer, { alignSelf: 'center' }]}>
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.primary, top: 0 }]} />
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
+          <AppLogo />
         </View>
 
         <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center', marginBottom: 24 }]}>Silah</Text>

@@ -2,13 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { AdminTabBar } from '../../components/AdminTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
@@ -86,7 +86,7 @@ function Field({ label, value, onChangeText, keyboardType, secure, colors, isRTL
         />
         {secure && (
           <TouchableOpacity onPress={() => setShow(!show)} activeOpacity={0.7} style={[{ position: 'absolute', padding: 4 }, isRTL ? { left: 10 } : { right: 10 }]}>
-            <Ionicons name={show ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.primary} />
+            <Ionicons name={show ? 'eye-outline' : 'eye-off-outline'} size={22} color={colors.primary} />
           </TouchableOpacity>
         )}
       </View>

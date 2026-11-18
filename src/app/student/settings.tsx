@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { AppLogo } from '../../components/AppLogo';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { clearSession } from '../../services/session';
@@ -76,9 +77,7 @@ export default function SettingsScreen() {
 
         <View style={styles.watermark}>
           <View style={commonStyles.logoContainer}>
-            <View style={[commonStyles.logoLayer, { backgroundColor: colors.primary, top: 0 }]} />
-            <View style={[commonStyles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
-            <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
+            <AppLogo />
           </View>
           <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Silah</Text>
         </View>

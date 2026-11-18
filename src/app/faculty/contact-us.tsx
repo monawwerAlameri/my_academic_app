@@ -9,7 +9,7 @@ export default function FacultyContactUsScreen() {
   const { colors, t, isRTL } = useAppSettings();
 
   const CONTACT_ROWS = [
-    { icon: 'mail-outline' as const, label: t('contactEmail'), value: 'support@academicbooking.uoh.edu.sa' },
+    { icon: 'mail-outline' as const, label: t('contactEmail'), value: 'silahacademic@gmail.com' },
     { icon: 'call-outline' as const, label: t('contactPhone'), value: '0530657978' },
     { icon: 'location-outline' as const, label: t('contactAddress'), value: t('contactAddressValue') },
   ];

@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { AdminTabBar } from '../../components/AdminTabBar';
+import { AppLogo } from '../../components/AppLogo';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { adminApi } from '../../services/adminApi';
 import { clearSession } from '../../services/session';
@@ -120,9 +121,7 @@ export default function SettingsScreen() {
         {/* Watermark Logo */}
         <View style={styles.watermarkWrapper}>
           <View style={commonStyles.logoContainer}>
-            <View style={[commonStyles.logoLayer, { backgroundColor: colors.primary, top: 0 }]} />
-            <View style={[commonStyles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
-            <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
+            <AppLogo />
           </View>
           <Text style={[styles.watermarkText, { color: colors.primary }]}>Silah</Text>
         </View>
