@@ -17,15 +17,12 @@ import { errorKey, retrySeconds } from '../../services/errors';
 import { studentOtpSend, studentRegister, studentVerify } from '../../services/student';
 import { commonStyles } from '../../theme/styles';
 
-// ---- أدوات مساعدة (داخل الملف بدل ملفات جديدة) ----
-// يحوّل الأرقام العربية/الفارسية إلى إنجليزية، لأن الباك يقبل الإنجليزية فقط
 const toEnglishDigits = (s: string) =>
   s
     .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
     .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
 const onlyDigits = (s: string) => toEnglishDigits(s).replace(/\D/g, '');
 
-// عدّاد تنازلي لمدة الحظر
 function useCountdown() {
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -50,7 +47,6 @@ function useCountdown() {
 }
 
 
-// إيميل الجامعة: s + الرقم الجامعي + @uoh.edu.sa (نفس شرط الباك اند)
 const UNI_EMAIL = /^s(\d+)@uoh\.edu\.sa$/;
 const PHONE = /^05\d{8}$/;
 
@@ -83,7 +79,6 @@ export default function RegisterScreen() {
 
   const fail = (key: string) => Alert.alert(t('error'), t(key as any));
 
-  // إرسال رمز التحقق على الإيميل الجامعي
   const handleSendCode = async () => {
     if (loading || lock.remaining > 0) return;
     if (!emailNorm) return fail('err_EMAIL_REQUIRED');
@@ -102,7 +97,6 @@ export default function RegisterScreen() {
     }
   };
 
-  // إنشاء الحساب: نتحقق من الرمز أول (verify) ثم نسجّل (register)
   const handleCreate = async () => {
     if (loading) return;
     const studentId = emailNorm.match(UNI_EMAIL)?.[1] ?? '';
@@ -124,7 +118,6 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      // الرمز يُستخدم مرة وحدة، فلو فشل التسجيل بعد التحقق ما نعيد التحقق
       if (!alreadyVerified) {
         await studentVerify(emailNorm, code);
         setVerifiedEmail(emailNorm);
