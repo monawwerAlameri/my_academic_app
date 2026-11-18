@@ -26,7 +26,6 @@ function Bar({ label, value, total, color, textColor, trackColor, isRTL }: {
   );
 }
 
-// يجمع عدد الصفوف اللي اسمها ضمن القائمة (مثلاً Booked + Confirmed)
 const sum = (rows: ReportRow[], ...labels: string[]) =>
   rows.filter((r) => labels.includes(r.label)).reduce((s, r) => s + Number(r.count), 0);
 
