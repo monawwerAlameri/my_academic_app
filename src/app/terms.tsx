@@ -4,7 +4,6 @@ import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } fr
 import { useAppSettings } from '../context/AppSettingsContext';
 import { commonStyles } from '../theme/styles';
 
-// صفحة عامة بدون شريط سفلي: تعرض شروط الخدمة أو سياسة الخصوصية من شاشة إنشاء الحساب
 export default function TermsScreen() {
   const { colors, t, isRTL } = useAppSettings();
   const { type } = useLocalSearchParams<{ type?: string }>();

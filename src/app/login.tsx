@@ -20,14 +20,12 @@ import { setAdminId, setFacultyId, setStudentId } from '../services/session';
 import { studentLogin, studentVerify } from '../services/student';
 import { commonStyles } from '../theme/styles';
 
-// يحوّل الأرقام العربية/الفارسية إلى إنجليزية، لأن الباك يقبل الإنجليزية فقط
 const toEnglishDigits = (s: string) =>
   s
     .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
     .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
 const onlyDigits = (s: string) => toEnglishDigits(s).replace(/\D/g, '');
 
-// عدّاد تنازلي لمدة الحظر
 function useCountdown() {
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -53,8 +51,6 @@ function useCountdown() {
 
 type Role = 'student' | 'faculty' | 'admin';
 
-// نحدد الدور من اللي كتبه المستخدم بالخانة الأولى:
-// أرقام فقط (أو إيميل الجامعة s123@uoh.edu.sa) = طالبة، F001 = دكتورة، غير كذا = أدمن
 const detectRole = (raw: string): { role: Role; id: string } => {
   const value = toEnglishDigits(raw.trim());
   const uni = value.match(/^s(\d+)@uoh\.edu\.sa$/i);
@@ -81,7 +77,7 @@ export default function LoginScreen() {
   const reverse = isRTL && { flexDirection: 'row-reverse' as const };
 
   const { role, id } = detectRole(username);
-  const needsCode = true; // كل الأدوار صار لها رمز تحقق (Faculty/login.php يرسل الرمز)
+  const needsCode = true; 
 
   const resetCodeStep = () => {
     setCodeSent(false);
@@ -94,7 +90,6 @@ export default function LoginScreen() {
     Alert.alert(t('error'), t(errorKey(e) as any));
   };
 
-  // ردود الأدمن ما ترمي خطأ، ترجع success=false مع message
   const showAdminFailure = (res: { message?: string; data?: any }) => {
     const secs = retrySeconds(res);
     if (secs > 0) {
@@ -106,7 +101,6 @@ export default function LoginScreen() {
     Alert.alert(t('error'), t(key as any));
   };
 
-  // زر إرسال الرمز: يتأكد من الباسورد ثم يرسل الرمز على الإيميل
   const handleSendCode = async () => {
     if (loading || lock.remaining > 0) return;
     if (!id || !password) {
@@ -134,7 +128,6 @@ export default function LoginScreen() {
           return;
         }
         setAdminIdFromServer(res.data?.adminId ?? id);
-        // رمز التجربة يظهر فقط أثناء التطوير (ADMIN_OTP_DEV_MODE)، وما يظهر بالنسخة النهائية
         if (__DEV__ && res.data?.devCode) setCode(res.data.devCode);
       }
       setCodeSent(true);

@@ -17,14 +17,12 @@ import { facultyOtpSend, facultyRegister } from '../../services/doctor';
 import { errorKey, retrySeconds } from '../../services/errors';
 import { commonStyles } from '../../theme/styles';
 
-// يحوّل الأرقام العربية/الفارسية إلى إنجليزية، لأن الباك يقبل الإنجليزية فقط
 const toEnglishDigits = (s: string) =>
   s
     .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
     .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
 const onlyDigits = (s: string) => toEnglishDigits(s).replace(/\D/g, '');
 
-// عدّاد تنازلي لمدة الحظر
 function useCountdown() {
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -83,7 +81,6 @@ export default function FacultyRegisterScreen() {
 
   const fail = (key: string) => Alert.alert(t('error'), t(key as any));
 
-  // إرسال رمز التحقق على بريد الجامعة
   const handleSendCode = async () => {
     if (loading || lock.remaining > 0) return;
     if (!emailNorm) return fail('err_EMAIL_REQUIRED');
@@ -101,7 +98,6 @@ export default function FacultyRegisterScreen() {
     }
   };
 
-  // إنشاء الحساب: الباك يتأكد من الرمز وينشئ الحساب ويرجّع رقم الدخول
   const handleCreate = async () => {
     if (loading) return;
     const name = fullName.trim();
