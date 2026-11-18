@@ -73,7 +73,6 @@ if ($exists) {
     registerFail("ALREADY_REGISTERED");
 }
 
-// بريد حساب محذوف
 $stmt = $conn->prepare("SELECT email FROM banned_emails WHERE email = ?");
 $stmt->bind_param("s", $email);
 $stmt->execute();
