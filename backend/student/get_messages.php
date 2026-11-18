@@ -40,14 +40,12 @@ if ($facultyFound == 0) {
     $conn->close();
     exit;
 }
-// Chat exists if there are messages between them, or an Online appointment that already started
 if (!chatExists($conn, $student_id, $faculty_id)) {
     echo json_encode(["success" => false, "code" => "CHAT_NOT_ALLOWED"]);
     $conn->close();
     exit;
 }
 
-// after_message_id = 0 returns the whole conversation, otherwise only the newer messages
 $stmt = $conn->prepare("
     SELECT message_id, sender_type, message_text, attachment_path, attachment_name, attachment_type, sent_at
     FROM message
@@ -72,7 +70,6 @@ while ($row = $result->fetch_assoc()) {
 
 $stmt->close();
 
-// The faculty messages the student just received are marked as read
 if ($last_faculty_message_id > 0) {
     $readStmt = $conn->prepare("UPDATE message SET is_read = 1 WHERE student_id = ? AND faculty_id = ? AND sender_type = 'faculty' AND is_read = 0 AND message_id <= ?");
     $readStmt->bind_param("ssi", $student_id, $faculty_id, $last_faculty_message_id);

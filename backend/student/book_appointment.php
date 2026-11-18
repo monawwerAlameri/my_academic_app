@@ -2,7 +2,6 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
-// Waiting lists of appointment times that already started are removed
 $clean_now = date("Y-m-d H:i:s");
 $cleanStmt = $conn->prepare("DELETE FROM waitinglist WHERE requested_time <= ?");
 $cleanStmt->bind_param("s", $clean_now);
@@ -77,7 +76,6 @@ if (!$faculty) {
 }
 requireActiveFaculty($conn, $faculty_id);
 
-// Booking window: today until 30 days ahead, and the slot must not have started
 $today    = date('Y-m-d');
 $now_time = date('H:i:s');
 $last_day = date('Y-m-d', strtotime('+30 days'));
@@ -92,7 +90,6 @@ if (
     exit;
 }
 
-// The slot must exist in the faculty weekly schedule
 $day_name = date('l', $date_ts);
 $stmt = $conn->prepare("
     SELECT location
@@ -115,7 +112,6 @@ if (!$slot) {
 }
 $location = $slot['location'];
 
-// The faculty must not have closed this date
 $stmt = $conn->prepare("SELECT closed_id FROM closed_date WHERE faculty_id = ? AND closed_date = ?");
 $stmt->bind_param("ss", $faculty_id, $appointment_date);
 $stmt->execute();
@@ -139,14 +135,12 @@ $doctor_message    = json_encode(["student" => $student['full_name'], "date" => 
 
 $conn->begin_transaction();
 try {
-    // Lock the faculty row so two students cannot book the same time together
     $lockStmt = $conn->prepare("SELECT account_status FROM facultymember WHERE faculty_id = ? FOR UPDATE");
     $lockStmt->bind_param("s", $faculty_id);
     $lockStmt->execute();
     $lockedFaculty = $lockStmt->get_result()->fetch_assoc();
     $lockStmt->close();
 
-    // After the lock: the doctor must still be Active
     if (!$lockedFaculty || $lockedFaculty['account_status'] !== 'Active') {
         $conn->rollback();
         echo json_encode(["success" => false, "code" => "FACULTY_NOT_ACTIVE"]);
@@ -154,7 +148,6 @@ try {
         exit;
     }
 
-    // After the lock: the date must still be open
     $closedAfterLockStmt = $conn->prepare("SELECT closed_id FROM closed_date WHERE faculty_id = ? AND closed_date = ?");
     $closedAfterLockStmt->bind_param("ss", $faculty_id, $appointment_date);
     $closedAfterLockStmt->execute();
@@ -168,7 +161,6 @@ try {
         exit;
     }
 
-    // Slot already booked (overlap with a Booked appointment of this faculty)
     $fullStmt = $conn->prepare("
         SELECT appointment_id
         FROM appointment
@@ -188,7 +180,6 @@ try {
         exit;
     }
 
-    // Student already has a Booked appointment at an overlapping time (any faculty)
     $myStmt = $conn->prepare("
         SELECT appointment_id
         FROM appointment
@@ -201,7 +192,6 @@ try {
     $hasBooking = $myStmt->get_result()->num_rows;
     $myStmt->close();
 
-    // Student already in a waiting list at an overlapping time (any faculty)
     $waitStmt = $conn->prepare("
         SELECT waiting_id
         FROM waitinglist
