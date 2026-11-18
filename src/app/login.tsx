@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { AppLogo } from '../components/AppLogo';
 import { useAppSettings } from '../context/AppSettingsContext';
 import { adminApi } from '../services/adminApi';
 import { facultyLogin, facultyVerify } from '../services/doctor';
@@ -19,15 +20,12 @@ import { setAdminId, setFacultyId, setStudentId } from '../services/session';
 import { studentLogin, studentVerify } from '../services/student';
 import { commonStyles } from '../theme/styles';
 
-// ---- أدوات مساعدة (داخل الملف بدل ملفات جديدة) ----
-// يحوّل الأرقام العربية/الفارسية إلى إنجليزية، لأن الباك يقبل الإنجليزية فقط
 const toEnglishDigits = (s: string) =>
   s
     .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
     .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
 const onlyDigits = (s: string) => toEnglishDigits(s).replace(/\D/g, '');
 
-// عدّاد تنازلي لمدة الحظر
 function useCountdown() {
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -51,11 +49,8 @@ function useCountdown() {
   return { remaining, start, label: `${mm}:${ss}` };
 }
 
-
 type Role = 'student' | 'faculty' | 'admin';
 
-// نحدد الدور من اللي كتبه المستخدم بالخانة الأولى:
-// أرقام فقط (أو إيميل الجامعة s123@uoh.edu.sa) = طالبة، F001 = دكتورة، غير كذا = أدمن
 const detectRole = (raw: string): { role: Role; id: string } => {
   const value = toEnglishDigits(raw.trim());
   const uni = value.match(/^s(\d+)@uoh\.edu\.sa$/i);
@@ -74,6 +69,7 @@ export default function LoginScreen() {
   const [codeSent, setCodeSent] = useState(false);
   const [studentEmail, setStudentEmail] = useState('');
   const [facultyIdFromServer, setFacultyIdFromServer] = useState('');
+  const [adminIdFromServer, setAdminIdFromServer] = useState('');
   const [loading, setLoading] = useState(false);
   const lock = useCountdown();
 
@@ -81,7 +77,7 @@ export default function LoginScreen() {
   const reverse = isRTL && { flexDirection: 'row-reverse' as const };
 
   const { role, id } = detectRole(username);
-  const needsCode = true;
+  const needsCode = true; 
 
   const resetCodeStep = () => {
     setCodeSent(false);
@@ -94,19 +90,17 @@ export default function LoginScreen() {
     Alert.alert(t('error'), t(errorKey(e) as any));
   };
 
-  // ردود الأدمن ما ترمي خطأ، ترجع success=false مع message
   const showAdminFailure = (res: { message?: string; data?: any }) => {
     const secs = retrySeconds(res);
     if (secs > 0) {
       lock.start(secs);
-      resetCodeStep(); // الباك يمسح الرمز عند الحظر
+      resetCodeStep(); 
     }
     const key = adminErrorKey(res.message);
     if (key === 'err_CODE_EXPIRED' || key === 'err_NO_PENDING_LOGIN') resetCodeStep();
     Alert.alert(t('error'), t(key as any));
   };
 
-  // زر إرسال الرمز: يتأكد من الباسورد ثم يرسل الرمز على الإيميل
   const handleSendCode = async () => {
     if (loading || lock.remaining > 0) return;
     if (!id || !password) {
@@ -119,17 +113,21 @@ export default function LoginScreen() {
         const d = await studentLogin(id, password);
         if (!d?.email) throw new Error('REQUEST_FAILED');
         setStudentEmail(d.email);
+        
+
       } else if (role === 'faculty') {
         const d = await facultyLogin(id, password);
-        setFacultyIdFromServer(d?.faculty_id ?? id);
+        if (!d?.email) throw new Error('REQUEST_FAILED');
+        setStudentEmail(d.email);
+        setFacultyIdFromServer((d as any).faculty_id ?? id);
       } else {
+
         const res = await adminApi.login(id, password);
         if (!res.success) {
-          setAdminId(res.data?.adminId ?? '');
           showAdminFailure(res);
           return;
         }
-        // رمز التجربة يظهر فقط أثناء التطوير (ADMIN_OTP_DEV_MODE)، وما يظهر بالنسخة النهائية
+        setAdminIdFromServer(res.data?.adminId ?? id);
         if (__DEV__ && res.data?.devCode) setCode(res.data.devCode);
       }
       setCodeSent(true);
@@ -141,7 +139,6 @@ export default function LoginScreen() {
     }
   };
 
-  // زر الدخول: يتحقق من الرمز (الدكتورة تدخل مباشرة)
   const handleSignIn = async () => {
     if (loading) return;
     if (!id || !password) {
@@ -169,11 +166,12 @@ export default function LoginScreen() {
         setFacultyId(d.faculty_id);
         router.replace('/faculty/home');
       } else {
-        const res = await adminApi.verifyLogin(code);
-        if (!res.success) {
+        const res = await adminApi.verifyLogin(adminIdFromServer || id, code);
+        if (!res.success || !res.data) {
           showAdminFailure(res);
           return;
         }
+        setAdminId(res.data.adminId);
         router.replace('/admin/home');
       }
     } catch (e) {
@@ -214,9 +212,7 @@ export default function LoginScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={[commonStyles.logoContainer, { alignSelf: 'center' }]}>
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.primary, top: 0 }]} />
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
+          <AppLogo />
         </View>
 
         <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Silah</Text>
@@ -241,7 +237,7 @@ export default function LoginScreen() {
               />
               {f.toggle && (
                 <TouchableOpacity onPress={f.toggle} activeOpacity={0.7}>
-                  <Ionicons name={f.secure ? 'eye-outline' : 'eye-off-outline'} size={22} color={colors.primary} />
+                  <Ionicons name={f.secure ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.primary} />
                 </TouchableOpacity>
               )}
               {f.action && (
@@ -272,6 +268,14 @@ export default function LoginScreen() {
           <Text style={[commonStyles.paragraph, { color: colors.primary }]}>{t('noAccount')}</Text>
           <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/student/register')}>
             <Text style={[commonStyles.name, { color: colors.accent }]}> {t('signUp')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* تسجيل الدكتور (الدكتور ينشئ حسابه بنفسه) */}
+        <View style={[styles.footer, { marginTop: 10 }]}>
+            <Text style={[commonStyles.paragraph, { color: colors.primary }]}>{isRTL ? 'هل أنت عضو هيئة تدريس؟' : 'Faculty member?'}</Text>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/faculty/register' as any)}>
+            <Text style={[commonStyles.name, { color: colors.accent }]}> {isRTL ? 'أنشئ حساب عضو هيئة التدريس' : 'Create a faculty account'}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

@@ -20,19 +20,19 @@ const KNOWN = [
   'INVALID_APPOINTMENT_TYPE', 'INVALID_CONSULTATION_TYPE',
   'JOIN_FAILED', 'LEAVE_FAILED', 'WAITING_ID_REQUIRED', 'WAITING_NOT_FOUND',
   'MESSAGE_REQUIRED', 'MESSAGE_FAILED', 'FILE_TOO_LARGE', 'INVALID_FILE_TYPE', 'UPLOAD_FAILED',
+  'INVALID_FACULTY_EMAIL',
   'MARK_READ_FAILED', 'PASSWORD_CHANGE_FAILED', 'PHONE_ALREADY_USED', 'PHONE_UPDATE_FAILED',
     'INVALID_TIME_RANGE', 'LOCATION_TOO_LONG', 'SCHEDULE_OVERLAP',
 ];
 
 export const errorKey = (e: unknown) => {
-  // فشل الاتصال بالسيرفر (الجوال مو على نفس الشبكة، أو XAMPP مطفي، أو الـ IP غلط)
   if (e instanceof TypeError && /network/i.test(e.message)) return 'err_NETWORK';
     if (e instanceof Error && /^HTTP_\d+$/.test(e.message)) return 'err_SERVER_ERROR';
   const code = e instanceof Error ? e.message : '';
   return KNOWN.includes(code) ? `err_${code}` : 'somethingWentWrong';
 };
 
-// ملفات الأدمن ترجع نص رسالة (message) وليس كود، فنحوّل الرسائل المعروفة إلى أكواد
+
 const ADMIN_MESSAGES: Record<string, string> = {
   'Username and password are required': 'LOGIN_FIELDS_REQUIRED',
   'Invalid username or password': 'INVALID_CREDENTIALS',

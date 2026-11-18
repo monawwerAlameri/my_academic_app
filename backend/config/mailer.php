@@ -38,13 +38,12 @@ function sendOtpEmail($to_email, $code) {
     }
 }
 
-// Returns 0 if sending is allowed, otherwise the seconds left in the block.
-// The 6th attempt starts a fixed block; attempts during the block never extend it.
+
 function otpWaitSeconds($conn, $email) {
     $now = time();
     $now_text = date("Y-m-d H:i:s", $now);
 
-    // 1) Is there an active block for this email?
+    
     $stmt = $conn->prepare("SELECT blocked_until FROM otp_block WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
@@ -52,11 +51,10 @@ function otpWaitSeconds($conn, $email) {
     $stmt->close();
 
     if ($block && strtotime($block['blocked_until']) > $now) {
-        return strtotime($block['blocked_until']) - $now;   // block keeps running, not renewed
+        return strtotime($block['blocked_until']) - $now;   
     }
 
-    // 2) Count the codes sent in the last OTP_RATE_WINDOW_SECONDS
-    //    (send time = expires_at minus the code lifetime)
+   
     $since = date("Y-m-d H:i:s", $now - OTP_RATE_WINDOW_SECONDS + OTP_LIFETIME_SECONDS);
     $stmt = $conn->prepare("SELECT COUNT(*) AS cnt FROM verificationcode WHERE email = ? AND expires_at > ?");
     $stmt->bind_param("ss", $email, $since);
@@ -68,8 +66,7 @@ function otpWaitSeconds($conn, $email) {
         return 0;   // allowed
     }
 
-    // 3) This is the 6th attempt: start a block of OTP_BLOCK_SECONDS from now.
-    //    If another request already started one at the same moment, keep the existing end time.
+    
     $new_until = date("Y-m-d H:i:s", $now + OTP_BLOCK_SECONDS);
     $stmt = $conn->prepare("
         INSERT INTO otp_block (email, blocked_until) VALUES (?, ?)
@@ -79,7 +76,7 @@ function otpWaitSeconds($conn, $email) {
     $stmt->execute();
     $stmt->close();
 
-    // Read the final end time back so the answer matches what is stored
+  
     $stmt = $conn->prepare("SELECT blocked_until FROM otp_block WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();

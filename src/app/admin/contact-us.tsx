@@ -9,8 +9,8 @@ export default function AdminContactUsScreen() {
   const { colors, t, isRTL } = useAppSettings();
 
   const CONTACT_ROWS = [
-    { icon: 'mail-outline' as const, label: t('contactEmail'), value: 'support@academicbooking.uoh.edu.sa' },
-    { icon: 'call-outline' as const, label: t('contactPhone'), value: '+966 16 000 0000' },
+    { icon: 'mail-outline' as const, label: t('contactEmail'), value: 'silahacademic@gmail.com' },
+    { icon: 'call-outline' as const, label: t('contactPhone'), value: '0530657978' },
     { icon: 'location-outline' as const, label: t('contactAddress'), value: 'University of Hail, College of CSE' },
   ];
 

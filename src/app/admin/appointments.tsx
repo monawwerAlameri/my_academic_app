@@ -14,7 +14,6 @@ type Status = 'confirmed' | 'pending' | 'completed' | 'cancelled';
 type Filter = 'all' | 'confirmed' | 'pending' | 'completed';
 const FILTERS: Filter[] = ['all', 'confirmed', 'pending', 'completed'];
 
-// القاعدة: الطالب والدكتور يستخدمون Booked، والأدمن يعرف Pending و Confirmed
 const toStatus = (s: string): Status => {
   if (s === 'Pending') return 'pending';
   if (s === 'Completed') return 'completed';

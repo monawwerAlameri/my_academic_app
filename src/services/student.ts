@@ -1,5 +1,6 @@
+import { Attachment, PickedFile, appendFile, toAttachment } from '../utils/attachments';
 import { riyadhMs } from '../utils/time';
-import { request } from './api';
+import { request, upload } from './api';
 import { fromApiTime } from './doctor';
 import { getStudentId } from './session';
 
@@ -191,6 +192,7 @@ export interface NotificationItem {
 
 const notifTitleKey = (type: string) => {
   const s = (type ?? '').toLowerCase();
+  if (s.includes('start')) return 'notifStarted';
   if (s.includes('cancel')) return 'notifCancellation';
   if (s.includes('wait')) return 'notifWaitlist';
   if (s.includes('remind')) return 'notifReminder';
@@ -234,7 +236,7 @@ export interface Conversation {
   isNow: boolean;
   canSend: boolean;
 }
-export interface Message { id: string; from: 'me' | 'them'; text: string; time: string; }
+export interface Message { id: string; from: 'me' | 'them'; text: string; time: string; attachment?: Attachment; }
 
 export const getConversations = async (): Promise<Conversation[]> => {
   const rows = ((await callAsStudent<any[]>('get_conversations')) ?? []);
@@ -249,19 +251,26 @@ export const getConversations = async (): Promise<Conversation[]> => {
   }));
 };
 
-
 export const getMessages = async (chatId: string): Promise<Message[]> => {
   const rows = ((await callAsStudent<any[]>('get_messages', { faculty_id: chatId })) ?? []);
   return rows.map((m) => ({
     id: String(m.message_id),
     from: truthy(m.is_mine) ? 'me' : 'them',
-    text: m.message_text || m.attachment_name || '',
+    text: m.message_text ?? '',
     time: clockOf(m.sent_at ?? ''),
+    attachment: toAttachment(m),
   }));
 };
 
-export const sendMessage = (chatId: string, text: string) =>
-  callAsStudent('send_message', { faculty_id: chatId, message_text: text });
+export const sendMessage = async (chatId: string, text: string, file?: PickedFile) => {
+  if (!file) return callAsStudent('send_message', { faculty_id: chatId, message_text: text });
+  const form = new FormData();
+  form.append('student_id', await getStudentId());
+  form.append('faculty_id', chatId);
+  form.append('message_text', text);
+  appendFile(form, file);
+  return upload('/student/send_message.php', form);
+};
 
 // ---------- التقييمات ----------
 export interface Review {
@@ -303,6 +312,8 @@ export const getProfile = async (): Promise<Profile> => {
   const d = await callAsStudent<any>('get_profile');
   return { fullName: d?.full_name ?? '', email: d?.email ?? '', phone: d?.phone_number ?? '' };
 };
+export const updatePhone = (phone: string) =>
+  callAsStudent('update_phone', { phone_number: phone });
 
 export const changePassword = (data: { currentPassword: string; newPassword: string }) =>
   callAsStudent('change_password', { current_password: data.currentPassword, new_password: data.newPassword });

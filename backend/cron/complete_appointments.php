@@ -1,10 +1,5 @@
 <?php
-// Cron job: replaces the MySQL event `complete_finished_appointments`.
-// Runs every minute. Every Booked appointment whose end time has passed becomes Completed.
-// Same logic as the event; the only difference is that "now" comes from PHP (Asia/Riyadh,
-// set in config/database.php) instead of UTC + 3 hours.
 
-// This file must run from the command line (cron) only, never from a browser
 if (php_sapi_name() !== 'cli') {
     http_response_code(403);
     exit('Forbidden');
@@ -12,7 +7,7 @@ if (php_sapi_name() !== 'cli') {
 
 require_once __DIR__ . '/../config/database.php';
 
-// Riyadh time from PHP (date_default_timezone_set is inside database.php)
+
 $now = date("Y-m-d H:i:s");
 
 try {

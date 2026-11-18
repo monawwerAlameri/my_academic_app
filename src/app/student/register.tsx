@@ -11,20 +11,18 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { AppLogo } from '../../components/AppLogo';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { errorKey, retrySeconds } from '../../services/errors';
 import { studentOtpSend, studentRegister, studentVerify } from '../../services/student';
 import { commonStyles } from '../../theme/styles';
 
-// ---- أدوات مساعدة (داخل الملف بدل ملفات جديدة) ----
-// يحوّل الأرقام العربية/الفارسية إلى إنجليزية، لأن الباك يقبل الإنجليزية فقط
 const toEnglishDigits = (s: string) =>
   s
     .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
     .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
 const onlyDigits = (s: string) => toEnglishDigits(s).replace(/\D/g, '');
 
-// عدّاد تنازلي لمدة الحظر
 function useCountdown() {
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -49,7 +47,6 @@ function useCountdown() {
 }
 
 
-// إيميل الجامعة: s + الرقم الجامعي + @uoh.edu.sa (نفس شرط الباك اند)
 const UNI_EMAIL = /^s(\d+)@uoh\.edu\.sa$/;
 const PHONE = /^05\d{8}$/;
 
@@ -82,7 +79,6 @@ export default function RegisterScreen() {
 
   const fail = (key: string) => Alert.alert(t('error'), t(key as any));
 
-  // إرسال رمز التحقق على الإيميل الجامعي
   const handleSendCode = async () => {
     if (loading || lock.remaining > 0) return;
     if (!emailNorm) return fail('err_EMAIL_REQUIRED');
@@ -101,7 +97,6 @@ export default function RegisterScreen() {
     }
   };
 
-  // إنشاء الحساب: نتحقق من الرمز أول (verify) ثم نسجّل (register)
   const handleCreate = async () => {
     if (loading) return;
     const studentId = emailNorm.match(UNI_EMAIL)?.[1] ?? '';
@@ -123,7 +118,6 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      // الرمز يُستخدم مرة وحدة، فلو فشل التسجيل بعد التحقق ما نعيد التحقق
       if (!alreadyVerified) {
         await studentVerify(emailNorm, code);
         setVerifiedEmail(emailNorm);
@@ -153,7 +147,7 @@ export default function RegisterScreen() {
   const fields: any[] = [
     { label: t('fullName'), icon: 'person-outline', placeholder: t('enterFullName'), value: fullName, onChange: setFullName },
     { label: t('phoneNumber'), icon: 'call-outline', placeholder: t('enterPhone'), value: phone, onChange: (v: string) => setPhone(onlyDigits(v).slice(0, 10)), keyboardType: 'phone-pad', maxLength: 10 },
-    { label: t('email'), icon: 'mail-outline', placeholder: t('enterEmail'), value: email, onChange: (v: string) => { setEmail(v); setCodeSent(false); setVerifiedEmail(''); setCode(''); }, keyboardType: 'email-address', autoCapitalize: 'none', autoCorrect: false },
+    { label: t('email'), icon: 'mail-outline', placeholder: t('enterUniEmail'), value: email, onChange: (v: string) => { setEmail(v); setCodeSent(false); setVerifiedEmail(''); setCode(''); }, keyboardType: 'email-address', autoCapitalize: 'none', autoCorrect: false },
     { label: t('password'), icon: 'lock-closed-outline', placeholder: t('createPassword'), value: password, onChange: setPassword, secure: !showPassword, toggle: () => setShowPassword(!showPassword) },
     { label: t('confirmPassword'), icon: 'lock-closed-outline', placeholder: t('confirmYourPassword'), value: confirmPassword, onChange: setConfirmPassword, secure: !showConfirmPassword, toggle: () => setShowConfirmPassword(!showConfirmPassword) },
     { label: t('verificationCode'), icon: 'shield-checkmark-outline', placeholder: t('enterVerificationCode'), value: code, onChange: (v: string) => setCode(onlyDigits(v).slice(0, 6)), keyboardType: 'number-pad', maxLength: 6, action: lock.remaining > 0 ? lock.label : t('sendCode'), onAction: handleSendCode, actionDisabled: loading || lock.remaining > 0 },
@@ -163,9 +157,7 @@ export default function RegisterScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={[commonStyles.logoContainer, { alignSelf: 'center' }]}>
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.primary, top: 0 }]} />
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
+          <AppLogo />
         </View>
 
         <Text style={[commonStyles.headerTitle, { color: colors.primary, textAlign: 'center' }]}>Silah</Text>
@@ -191,7 +183,7 @@ export default function RegisterScreen() {
               />
               {f.toggle && (
                 <TouchableOpacity onPress={f.toggle}>
-                  <Ionicons name={f.secure ? 'eye-outline' : 'eye-off-outline'} size={22} color={colors.primary} />
+                  <Ionicons name={f.secure ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.primary} />
                 </TouchableOpacity>
               )}
               {f.action && (
@@ -213,9 +205,9 @@ export default function RegisterScreen() {
           <Ionicons name={agreed ? 'checkbox' : 'square-outline'} size={24} color={colors.primary} />
           <Text style={[commonStyles.paragraph, align, { flex: 1, color: colors.primary }]}>
             {t('agreeToTerms')}{' '}
-            <Text style={{ color: colors.accent, fontWeight: '600' }}>{t('termsOfService')}</Text>
+            <Text onPress={() => router.push({ pathname: '/terms', params: { type: 'terms' } } as any)} style={{ color: colors.accent, fontWeight: '600', textDecorationLine: 'underline' }}>{t('termsOfService')}</Text>
             {' '}{t('andWord')}{' '}
-            <Text style={{ color: colors.accent, fontWeight: '600' }}>{t('privacyPolicy')}</Text>
+            <Text onPress={() => router.push({ pathname: '/terms', params: { type: 'privacy' } } as any)} style={{ color: colors.accent, fontWeight: '600', textDecorationLine: 'underline' }}>{t('privacyPolicy')}</Text>
           </Text>
         </TouchableOpacity>
 

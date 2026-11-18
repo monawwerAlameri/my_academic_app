@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -23,7 +23,15 @@ import { commonStyles } from '../../theme/styles';
 export default function ChatScreen() {
   const { colors, t, isRTL } = useAppSettings();
   const [search, setSearch] = useState('');
-  const { data: conversations, loading, error, reload } = useFetch<Conversation[]>(getConversations, []);
+    const { data: conversations, loading, error, reload, silentReload } = useFetch<Conversation[]>(getConversations, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      silentReload();
+      const timer = setInterval(silentReload, 10000);
+      return () => clearInterval(timer);
+    }, [silentReload])
+  );
 
   const filtered = conversations.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase())
@@ -74,12 +82,23 @@ export default function ChatScreen() {
               activeOpacity={0.7}
               onPress={() => openChat(conversation)}
             >
-              <Ionicons name="person-circle-outline" size={40} color={colors.primary} />
+                            <View>
+                <Ionicons name="person-circle-outline" size={40} color={colors.primary} />
+                {conversation.isNow && (
+                  <View style={[styles.onlineDot, { backgroundColor: colors.success, borderColor: colors.background }]} />
+                )}
+              </View>
 
               <View style={{ flex: 1 }}>
                 <Text style={[commonStyles.name, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>
                   {conversation.name}
                 </Text>
+                {conversation.isNow && (
+                  <View style={[styles.activeBadge, { backgroundColor: colors.successLight }, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+                    <Text style={[styles.activeText, { color: colors.success }]}>{t('activeNow')}</Text>
+                  </View>
+                )}
+
                 <Text
                   style={[styles.smallText, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}
                   numberOfLines={1}
@@ -106,4 +125,7 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   chatRow: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12 },
   smallText: { fontSize: 12 },
+  onlineDot: { position: 'absolute', bottom: 2, right: 2, width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
+  activeBadge: { marginTop: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
+  activeText: { fontSize: 11, fontWeight: '700' },
 });

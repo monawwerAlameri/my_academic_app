@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { EmptyState } from '../../components/DataState';
 
 import {
   ActivityIndicator,
@@ -100,7 +101,7 @@ const cancelSession = (id: string) => {
     <Text style={[commonStyles.empty, { color: colors.danger }]}>{t('loadError')}</Text>
   </TouchableOpacity>
 ) : sessions.length === 0 ? (
-  <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noBookings')}</Text>
+<EmptyState text={t('noBookings')} />
 ) : (
   sessions.map((session) => (
     <View key={session.id} style={[styles.sessionRow, reverse]}>
@@ -140,7 +141,7 @@ const cancelSession = (id: string) => {
     <Text style={[commonStyles.empty, { color: colors.danger }]}>{t('loadError')}</Text>
   </TouchableOpacity>
 ) : latestNotifications.length === 0 ? (
-  <Text style={[commonStyles.empty, { color: colors.textSecondary }]}>{t('noNotifications')}</Text>
+  <EmptyState text={t('noNotifications')} />
 ) : (
   latestNotifications.map((item) => (
     <View key={item.id} style={[styles.notificationCard, { backgroundColor: colors.cardBackground }]}>

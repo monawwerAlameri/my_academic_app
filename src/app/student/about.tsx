@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppLogo } from '../../components/AppLogo';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { commonStyles } from '../../theme/styles';
@@ -19,17 +20,14 @@ export default function AboutScreen() {
         </View>
 
         <View style={commonStyles.logoContainer}>
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.primary, top: 0 }]} />
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.accent, top: 32 }]} />
-          <View style={[commonStyles.logoLayer, { backgroundColor: colors.placeholder, top: 64 }]} />
+          <AppLogo />
         </View>
 
         <Text style={[styles.appName, { color: colors.primary }]}>Silah</Text>
 
         <View style={[commonStyles.panel, styles.card, { borderColor: colors.border }]}>
-          <Text style={[commonStyles.paragraph, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('aboutP1')}</Text>
+      <Text style={[commonStyles.paragraph, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('aboutP1')}</Text>
           <Text style={[commonStyles.paragraph, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('aboutP2')}</Text>
-          <Text style={[commonStyles.paragraph, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{t('aboutP3')}</Text>
           <Text style={[styles.version, { color: colors.textSecondary }]}>{t('version')}</Text>
         </View>
 

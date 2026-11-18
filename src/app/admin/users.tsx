@@ -3,9 +3,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -52,12 +50,6 @@ export default function AdminUsers() {
   const [filter, setFilter] = useState<Filter>('all');
   const [pending, setPending] = useState<{ user: AdminUser; action: ActionType } | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const [showAdd, setShowAdd] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newEmail, setNewEmail] = useState('');
-  const [newDept, setNewDept] = useState('');
-  const [addError, setAddError] = useState(false);
 
   const { data: users, loading, error, reload } = useFetch(async () => {
     const res = await adminApi.getUsers();
@@ -127,77 +119,6 @@ export default function AdminUsers() {
     }
   };
 
-  // ---------- add doctor ----------
-  const openAdd = () => {
-    setNewName('');
-    setNewEmail('');
-    setNewDept('');
-    setAddError(false);
-    setShowAdd(true);
-  };
-
-  const saveDoctor = async () => {
-    if (busy) return;
-    const name = newName.trim();
-    const email = newEmail.trim();
-    const dept = newDept.trim();
-    const emailOk = email.includes('@') && email.includes('.');
-    const allFilled = name.length > 0 && dept.length > 0;
-    if (!allFilled) {
-      setAddError(true);
-      return;
-    }
-    if (!emailOk) {
-      setAddError(true);
-      return;
-    }
-    const fullName = name.startsWith('Dr.') ? name : 'Dr. ' + name;
-    setBusy(true);
-    try {
-      const res = await adminApi.addDoctor(fullName, email, dept);
-      const doctor = res.data;
-      if (!res.success) {
-        Alert.alert(t('error'), t('somethingWentWrong'));
-        return;
-      }
-      if (doctor === null) {
-        Alert.alert(t('error'), t('somethingWentWrong'));
-        return;
-      }
-      setShowAdd(false);
-      Alert.alert(doctor.facultyId, doctor.temporaryPassword);
-      reload();
-    } catch {
-      Alert.alert(t('error'), t('somethingWentWrong'));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const renderField = (
-    label: string,
-    value: string,
-    onChange: (v: string) => void,
-    placeholder: string,
-    email?: boolean
-  ) => (
-    <View style={{ marginBottom: 12 }}>
-      <Text style={[styles.fieldLabel, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
-      <TextInput
-        style={[
-          styles.input,
-          { borderColor: colors.border, color: colors.primary, backgroundColor: colors.cardBackground, textAlign: isRTL ? 'right' : 'left' },
-        ]}
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor={colors.placeholder}
-        autoCapitalize={email ? 'none' : 'words'}
-        keyboardType={email ? 'email-address' : 'default'}
-        autoCorrect={false}
-      />
-    </View>
-  );
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={commonStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -215,15 +136,6 @@ export default function AdminUsers() {
             autoCorrect={false}
           />
         </View>
-
-        <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: colors.primary }, isRTL && { flexDirection: 'row-reverse' }]}
-          activeOpacity={0.85}
-          onPress={openAdd}
-        >
-          <Ionicons name="person-add-outline" size={18} color={colors.white} />
-          <Text style={{ color: colors.white, fontWeight: '700', fontSize: 14 }}>{t('addDoctor')}</Text>
-        </TouchableOpacity>
 
         <View style={[commonStyles.chipsRow, isRTL && { flexDirection: 'row-reverse' }]}>
           {FILTERS.map((f) => {
@@ -327,29 +239,6 @@ export default function AdminUsers() {
         </View>
       </Modal>
 
-      {/* Add doctor dialog */}
-      <Modal transparent animationType="fade" visible={showAdd} onRequestClose={() => setShowAdd(false)}>
-        <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={[styles.dialog, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <Text style={[styles.dialogTitle, { color: colors.primary, textAlign: isRTL ? 'right' : 'left', marginBottom: 14 }]}>{t('addDoctorTitle')}</Text>
-            {renderField(t('fullName'), newName, setNewName, t('enterFullName'))}
-            {renderField(t('email'), newEmail, setNewEmail, t('enterEmail'), true)}
-            {renderField(t('departmentLabel'), newDept, setNewDept, t('departmentPlaceholder'))}
-            {addError && (
-              <Text style={[styles.errorText, { color: colors.danger, textAlign: isRTL ? 'right' : 'left' }]}>{t('fillDoctorFields')}</Text>
-            )}
-            <View style={[styles.dialogActions, isRTL && { flexDirection: 'row-reverse' }]}>
-              <TouchableOpacity style={[styles.dialogButton, { borderColor: colors.border, borderWidth: 1 }]} onPress={() => setShowAdd(false)}>
-                <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.dialogButton, { backgroundColor: colors.primary, opacity: busy ? 0.6 : 1 }]} onPress={saveDoctor}>
-                <Text style={{ color: colors.white, fontWeight: '700' }}>{t('save')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
       <AdminTabBar activeTab="users" onTabPress={(key) => router.replace(('/admin/' + key) as any)} />
     </SafeAreaView>
   );
@@ -357,7 +246,6 @@ export default function AdminUsers() {
 
 const styles = StyleSheet.create({
   searchBox: { marginBottom: 12 },
-  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 46, borderRadius: 14, marginBottom: 14 },
   card: { alignItems: 'center', gap: 10 },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 15, fontWeight: '700' },
@@ -375,7 +263,4 @@ const styles = StyleSheet.create({
   dialogBody: { fontSize: 13, lineHeight: 19, marginBottom: 18 },
   dialogActions: { flexDirection: 'row', gap: 10, marginTop: 4 },
   dialogButton: { flex: 1, height: 46, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: 6 },
-  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, height: 46, fontSize: 14 },
-  errorText: { fontSize: 12.5, marginBottom: 10 },
 });

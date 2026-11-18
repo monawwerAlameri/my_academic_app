@@ -1,4 +1,5 @@
-import { request } from './api';
+import { Attachment, PickedFile, appendFile, toAttachment } from '../utils/attachments';
+import { request, upload } from './api';
 import { getFacultyId } from './session';
 
 export type DayKey = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday';
@@ -224,8 +225,8 @@ export const facultyVerify = async (faculty_id: string, code: string) => {
   });
 
   // ---------- المحادثات ----------
-export interface FacultyConversation { id: string; name: string; lastMessage: string; time: string; }
-export interface FacultyMessage { id: string; from: 'me' | 'them'; text: string; time: string; }
+export interface FacultyConversation { id: string; name: string; lastMessage: string; time: string; isNow: boolean; }
+export interface FacultyMessage { id: string; from: 'me' | 'them'; text: string; time: string; attachment?: Attachment; }
 
 const clockOf = (v: string) => {
   const s = v ?? '';
@@ -234,32 +235,51 @@ const clockOf = (v: string) => {
 
 export const getFacultyConversations = async (): Promise<FacultyConversation[]> => {
   const fid = await getFacultyId();
-  const res = await request<{ data: any[] }>(`/Faculty/get_conversations.php?faculty_id=${encodeURIComponent(fid)}`);
+  const res = await request<{ data: any[] }>('/Faculty/get_conversations.php?faculty_id=' + encodeURIComponent(fid));
   return (res.data ?? []).map((c) => ({
     id: String(c.student_id),
     name: c.student_name ?? c.full_name ?? '',
     lastMessage: c.last_message ?? '',
     time: clockOf(c.last_message_time ?? c.last_active ?? ''),
+    isNow: c.is_now === true || Number(c.is_now) === 1,
   }));
 };
-
 export const getFacultyMessages = async (studentId: string): Promise<FacultyMessage[]> => {
   const fid = await getFacultyId();
   const res = await request<{ data: any[] }>(
-    `/Faculty/get_messages.php?faculty_id=${encodeURIComponent(fid)}&student_id=${encodeURIComponent(studentId)}`
+    '/Faculty/get_messages.php?faculty_id=' + encodeURIComponent(fid) + '&student_id=' + encodeURIComponent(studentId)
   );
   return (res.data ?? []).map((m) => ({
     id: String(m.message_id),
     from: String(m.sender_type ?? '').toLowerCase() === 'student' ? 'them' : 'me',
-    text: m.message_text || m.attachment_name || '',
+    text: m.message_text ?? '',
     time: clockOf(m.sent_at ?? ''),
+    attachment: toAttachment(m),
   }));
 };
 
-export const sendFacultyMessage = async (studentId: string, text: string) =>
-  request<void>('/Faculty/send_message.php', {
-    method: 'POST',
-    body: JSON.stringify({ faculty_id: await getFacultyId(), student_id: studentId, message_text: text }),
-  });
+export const sendFacultyMessage = async (studentId: string, text: string, file?: PickedFile) => {
+  const fid = await getFacultyId();
+  if (!file) {
+    return request<void>('/Faculty/send_message.php', {
+      method: 'POST',
+      body: JSON.stringify({ faculty_id: fid, student_id: studentId, message_text: text }),
+    });
+  }
+  const form = new FormData();
+  form.append('student_id', studentId);
+  form.append('message_text', text);
+  appendFile(form, file);
+  return upload<void>('/Faculty/send_message.php?faculty_id=' + encodeURIComponent(fid), form);
+};
 
-  
+  // ---------- تسجيل الدكتور ----------
+export const facultyOtpSend = (email: string) =>
+  request('/Faculty/send_otp.php', { method: 'POST', body: JSON.stringify({ email }) });
+
+export const facultyRegister = async (d: {
+  full_name: string; department: string; office_location: string; phone_number: string; email: string; password: string; code: string;
+}) => {
+  const res = await request<{ data: { faculty_id: string } }>('/Faculty/register.php', { method: 'POST', body: JSON.stringify(d) });
+  return res.data;
+};
