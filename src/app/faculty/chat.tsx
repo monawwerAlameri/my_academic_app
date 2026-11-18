@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -20,8 +20,16 @@ import { commonStyles } from '../../theme/styles';
 export default function FacultyChatScreen() {
   const { colors, t, isRTL } = useAppSettings();
   const [search, setSearch] = useState('');
-  const { data: conversations, loading, error, reload } = useFetch<FacultyConversation[]>(getFacultyConversations, []);
 
+    const { data: conversations, loading, error, reload, silentReload } = useFetch<FacultyConversation[]>(getFacultyConversations, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      silentReload();
+      const timer = setInterval(silentReload, 10000);
+      return () => clearInterval(timer);
+    }, [silentReload])
+  );
   const filteredList = conversations.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase())
   );
