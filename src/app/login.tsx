@@ -94,7 +94,7 @@ export default function LoginScreen() {
     const secs = retrySeconds(res);
     if (secs > 0) {
       lock.start(secs);
-      resetCodeStep(); // الباك يمسح الرمز عند الحظر
+      resetCodeStep(); 
     }
     const key = adminErrorKey(res.message);
     if (key === 'err_CODE_EXPIRED' || key === 'err_NO_PENDING_LOGIN') resetCodeStep();
@@ -139,7 +139,6 @@ export default function LoginScreen() {
     }
   };
 
-  // زر الدخول: يتحقق من الرمز
   const handleSignIn = async () => {
     if (loading) return;
     if (!id || !password) {

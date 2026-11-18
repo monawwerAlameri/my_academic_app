@@ -40,7 +40,6 @@ export default function ChatConversationScreen() {
 
   const reverse = isRTL && { flexDirection: 'row-reverse' as const };
 
-  // اختيار مرفق (الأنواع غير المسموحة مثل php تنرفض هنا وفي الباك)
   const handlePick = async () => {
     if (sending || readOnly) return;
     try {
