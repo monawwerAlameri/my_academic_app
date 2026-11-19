@@ -46,7 +46,7 @@ if (!$faculty) {
 }
 
 $stmt = $conn->prepare(
-    "SELECT r.review_id, r.rating, r.comment, r.review_date, r.is_anonymous, s.full_name AS student_name
+    "SELECT r.review_id, r.student_id, r.rating, r.comment, r.review_date, r.is_anonymous, s.full_name AS student_name
      FROM review r
      JOIN student s ON r.student_id = s.student_id
      WHERE r.faculty_id = ?
@@ -62,9 +62,13 @@ $count = 0;
 while ($row = $result->fetch_assoc()) {
     $sum += (int) $row['rating'];
     $count++;
+    $isAnonymous = (int) $row['is_anonymous'] === 1;
     $reviews[] = [
         'reviewId' => $row['review_id'],
-        'reviewerName' => ((int) $row['is_anonymous'] === 1) ? 'Anonymous' : $row['student_name'],
+        'reviewerName' => $isAnonymous ? 'Anonymous' : $row['student_name'],
+        'studentId' => $row['student_id'],
+        'studentName' => $row['student_name'],
+        'isAnonymous' => $isAnonymous,
         'rating' => (int) $row['rating'],
         'comment' => $row['comment'],
         'reviewDate' => $row['review_date']

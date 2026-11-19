@@ -6,11 +6,8 @@ require_once __DIR__ . '/admin_auth.php';
 requireAdmin($conn);
 
 $statusFilter = trim($_GET['status'] ?? '');
-
-if ($statusFilter === 'Pending' || $statusFilter === 'Confirmed') {
-    $statusFilter = 'Booked';
-}
-$allowedStatuses = ['Booked', 'Cancelled', 'Completed'];
+$allowedStatuses = ['Booked', 'Pending Confirmation', 'Completed', 'Absent', 'Cancelled'];
+$useFilter = in_array($statusFilter, $allowedStatuses, true);
 
 $sql = "SELECT
             a.appointment_id, a.appointment_date, a.appointment_time, a.appointment_end_time,
@@ -21,17 +18,15 @@ $sql = "SELECT
         JOIN student s ON a.student_id = s.student_id
         JOIN facultymember f ON a.faculty_id = f.faculty_id";
 
-if ($statusFilter !== '' && in_array($statusFilter, $allowedStatuses)) {
+if ($useFilter) {
     $sql .= " WHERE a.status = ?";
 }
 $sql .= " ORDER BY a.appointment_date DESC, a.appointment_time DESC";
 
 $stmt = $conn->prepare($sql);
-
-if ($statusFilter !== '' && in_array($statusFilter, $allowedStatuses)) {
+if ($useFilter) {
     $stmt->bind_param('s', $statusFilter);
 }
-
 $stmt->execute();
 $result = $stmt->get_result();
 
