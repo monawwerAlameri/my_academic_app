@@ -11,9 +11,14 @@ require_once __DIR__ . '/../config/database.php';
 $now = date("Y-m-d H:i:s");
 
 try {
+        // Online: ended -> Completed
+    // In-Person: ended -> Pending Confirmation (the faculty confirms attendance later)
     $stmt = $conn->prepare("
         UPDATE appointment
-        SET status = 'Completed'
+        SET status = CASE
+            WHEN appointment_type = 'In-Person' THEN 'Pending Confirmation'
+            ELSE 'Completed'
+        END
         WHERE status = 'Booked'
         AND TIMESTAMP(appointment_date, appointment_end_time) <= ?
     ");

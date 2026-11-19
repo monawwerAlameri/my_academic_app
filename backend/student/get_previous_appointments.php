@@ -27,7 +27,7 @@ $stmt = $conn->prepare("
     FROM appointment
     INNER JOIN facultymember ON appointment.faculty_id = facultymember.faculty_id
     WHERE appointment.student_id = ?
-    AND appointment.status IN ('Completed', 'Cancelled')
+    AND appointment.status IN ('Completed', 'Cancelled', 'Pending Confirmation')
     ORDER BY appointment.appointment_date DESC, appointment.appointment_time DESC
 ");
 $stmt->bind_param("s", $student_id);
