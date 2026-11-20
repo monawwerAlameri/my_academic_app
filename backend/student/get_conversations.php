@@ -48,7 +48,7 @@ $stmt = $conn->prepare("
             FROM appointment
             WHERE student_id = ?
             AND appointment_type = 'Online'
-            AND status IN ('Booked', 'Completed')
+           AND status IN ('Booked', 'Pending Confirmation', 'Completed', 'Absent')
             AND TIMESTAMP(appointment_date, appointment_time) <= ?
             UNION ALL
             SELECT faculty_id, sent_at AS last_time

@@ -10,7 +10,7 @@ function chatExists($conn, $student_id, $faculty_id) {
             (SELECT COUNT(*) FROM appointment
              WHERE student_id = ? AND faculty_id = ?
              AND appointment_type = 'Online'
-             AND status IN ('Booked', 'Completed')
+            AND status IN ('Booked', 'Pending Confirmation', 'Completed', 'Absent')
              AND CONCAT(appointment_date, ' ', appointment_time) <= ?
             ) AS total
     ");

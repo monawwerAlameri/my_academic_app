@@ -2,18 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { DataState } from '../../components/DataState';
 import { FacultyTabBar } from '../../components/FacultyTabBar';
 import { useAppSettings } from '../../context/AppSettingsContext';
-import { commonStyles } from '../../theme/styles';
-import { DataState } from '../../components/DataState';
 import { useFetch } from '../../hooks/useFetch';
-import { FacultyAppointment, cancelFacultyAppointment, getFacultyAppointments } from '../../services/doctor';
+import { FacultyAppointment, cancelFacultyAppointment, confirmAttendance, getFacultyAppointments } from '../../services/doctor';
 import { errorKey } from '../../services/errors';
-
+import { commonStyles } from '../../theme/styles';
+import { attendanceStatus } from '../../utils/labels';
 
 type ListTab = 'previous' | 'upcoming';
-
-
 
 export default function FacultyBookingsScreen() {
   const { colors, t, isRTL } = useAppSettings();
@@ -21,26 +19,44 @@ export default function FacultyBookingsScreen() {
   const [cancelTarget, setCancelTarget] = useState<FacultyAppointment | null>(null);
   const [reason, setReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
-const { data: bookings, loading, error, reload } = useFetch<FacultyAppointment[]>(getFacultyAppointments, []);
+  const { data: bookings, loading, error, reload } = useFetch<FacultyAppointment[]>(getFacultyAppointments, []);
 
-const confirmCancel = (booking: FacultyAppointment) => {
-  setReason('');
-  setCancelTarget(booking);
-};
+  const confirmCancel = (booking: FacultyAppointment) => {
+    setReason('');
+    setCancelTarget(booking);
+  };
 
-const doCancel = async () => {
-  if (!cancelTarget || cancelling) return;
-  setCancelling(true);
-  try {
-    await cancelFacultyAppointment(cancelTarget.id, reason.trim() || undefined);
-    setCancelTarget(null);
-    reload();
-  } catch (e) {
-    Alert.alert(t('error'), t(errorKey(e) as any));
-  } finally {
-    setCancelling(false);
-  }
-};
+  const doCancel = async () => {
+    if (!cancelTarget || cancelling) return;
+    setCancelling(true);
+    try {
+      await cancelFacultyAppointment(cancelTarget.id, reason.trim() || undefined);
+      setCancelTarget(null);
+      reload();
+    } catch (e) {
+      Alert.alert(t('error'), t(errorKey(e) as any));
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  // تأكيد الحضور: تم الحضور -> Completed ، لم يتم الحضور -> Absent
+  const markAttendance = (booking: FacultyAppointment, attended: boolean) => {
+    Alert.alert(t('confirmAttendanceTitle'), t(attended ? 'confirmAttendedMsg' : 'confirmAbsentMsg'), [
+      { text: t('no'), style: 'cancel' },
+      {
+        text: t(attended ? 'attended' : 'notAttended'),
+        onPress: async () => {
+          try {
+            await confirmAttendance(booking.id, attended);
+            reload();
+          } catch (e) {
+            Alert.alert(t('error'), t(errorKey(e) as any));
+          }
+        },
+      },
+    ]);
+  };
 
   const filtered = bookings.filter((b) => (tab === 'upcoming' ? !b.isPast : b.isPast));
 
@@ -60,69 +76,63 @@ const doCancel = async () => {
         </View>
 
         <View style={[commonStyles.panel, { borderColor: colors.border }]}>
-         <DataState
-  loading={loading}
-  error={error}
-  empty={filtered.length === 0}
-  emptyText={t('noBookings')}
-  onRetry={reload}
->
-  {filtered.map((booking, index) => (
-    <BookingRow
-      key={booking.id}
-      booking={booking}
-      title={`${booking.isOnline ? t('onlineAppointment') : t('inPersonAppointment')} - ${t(booking.consultationKey)}`}
-      isLast={index === filtered.length - 1}
-      onCancel={() => confirmCancel(booking)}
-      colors={colors}
-      isRTL={isRTL}
-    />
-  ))}
-</DataState>
+          <DataState loading={loading} error={error} empty={filtered.length === 0} emptyText={t('noBookings')} onRetry={reload}>
+            {filtered.map((booking, index) => (
+              <BookingRow
+                key={booking.id}
+                booking={booking}
+                title={`${booking.isOnline ? t('onlineAppointment') : t('inPersonAppointment')} - ${t(booking.consultationKey)}`}
+                isLast={index === filtered.length - 1}
+                onCancel={() => confirmCancel(booking)}
+                onAttendance={(attended) => markAttendance(booking, attended)}
+                t={t}
+                colors={colors}
+                isRTL={isRTL}
+              />
+            ))}
+          </DataState>
         </View>
 
         <View style={{ height: 90 }} />
       </ScrollView>
 
+      <Modal visible={!!cancelTarget} transparent animationType="fade">
+        <View style={styles.overlay}>
+          <View style={[commonStyles.panel, { width: '100%', padding: 20, backgroundColor: colors.background, borderColor: colors.border }]}>
+            <Text style={[commonStyles.name, { color: colors.primary, marginBottom: 8 }]}>{t('cancelBookingTitle')}</Text>
+            <Text style={[commonStyles.paragraph, { color: colors.textSecondary, marginBottom: 14 }]}>{t('cancelBookingMsg')}</Text>
 
+            <View style={commonStyles.field}>
+              <Text style={[commonStyles.fieldLabel, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+                {t('reasonOptional')}
+              </Text>
+              <TextInput
+                style={[commonStyles.fieldInput, { borderColor: colors.border, color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
+                placeholder={t('reasonPlaceholder')}
+                placeholderTextColor={colors.placeholder}
+                value={reason}
+                onChangeText={setReason}
+              />
+            </View>
 
-<Modal visible={!!cancelTarget} transparent animationType="fade">
-  <View style={styles.overlay}>
-    <View style={[commonStyles.panel, { width: '100%', padding: 20, backgroundColor: colors.background, borderColor: colors.border }]}>
-      <Text style={[commonStyles.name, { color: colors.primary, marginBottom: 8 }]}>{t('cancelBookingTitle')}</Text>
-      <Text style={[commonStyles.paragraph, { color: colors.textSecondary, marginBottom: 14 }]}>{t('cancelBookingMsg')}</Text>
-
-      <View style={commonStyles.field}>
-        <Text style={[commonStyles.fieldLabel, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
-          {t('reasonOptional')}
-        </Text>
-        <TextInput
-          style={[commonStyles.fieldInput, { borderColor: colors.border, color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}
-          placeholder={t('reasonPlaceholder')}
-          placeholderTextColor={colors.placeholder}
-          value={reason}
-          onChangeText={setReason}
-        />
-      </View>
-
-      <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
-        <TouchableOpacity
-          style={[commonStyles.chip, { flex: 1, alignItems: 'center', borderColor: colors.border }]}
-          onPress={() => setCancelTarget(null)}
-        >
-          <Text style={[commonStyles.chipText, { color: colors.textSecondary }]}>{t('no')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[commonStyles.chip, { flex: 1, alignItems: 'center', backgroundColor: colors.danger, borderColor: colors.danger, opacity: cancelling ? 0.6 : 1 }]}
-          onPress={doCancel}
-          disabled={cancelling}
-        >
-          <Text style={[commonStyles.chipText, { color: colors.white }]}>{t('yesCancel')}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-</Modal>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+              <TouchableOpacity
+                style={[commonStyles.chip, { flex: 1, alignItems: 'center', borderColor: colors.border }]}
+                onPress={() => setCancelTarget(null)}
+              >
+                <Text style={[commonStyles.chipText, { color: colors.textSecondary }]}>{t('no')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[commonStyles.chip, { flex: 1, alignItems: 'center', backgroundColor: colors.danger, borderColor: colors.danger, opacity: cancelling ? 0.6 : 1 }]}
+                onPress={doCancel}
+                disabled={cancelling}
+              >
+                <Text style={[commonStyles.chipText, { color: colors.white }]}>{t('yesCancel')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       <FacultyTabBar activeTab="bookings" onTabPress={(key) => router.push(`/faculty/${key}` as any)} />
     </SafeAreaView>
   );
@@ -141,18 +151,14 @@ function TabButton({ label, isActive, onPress, colors }: { label: string; isActi
 }
 
 function BookingRow({
-  booking,
-  title,
-  isLast,
-  onCancel,
-  colors,
-  isRTL,
+  booking, title, isLast, onCancel, onAttendance, t, colors, isRTL,
 }: {
-
   booking: FacultyAppointment;
   title: string;
   isLast: boolean;
   onCancel: () => void;
+  onAttendance: (attended: boolean) => void;
+  t: (key: any) => string;
   colors: any;
   isRTL: boolean;
 }) {
@@ -162,13 +168,7 @@ function BookingRow({
   ];
 
   return (
-    <View
-      style={[
-        commonStyles.menuRow,
-        !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
-        isRTL && { flexDirection: 'row-reverse' },
-      ]}
-    >
+    <View style={[commonStyles.menuRow, !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border }, isRTL && { flexDirection: 'row-reverse' }]}>
       <View style={{ flex: 1 }}>
         <Text style={[commonStyles.name, { color: colors.primary, textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
         {info.map((item) => (
@@ -177,6 +177,29 @@ function BookingRow({
             <Text style={[styles.infoText, { color: colors.textSecondary }]}>{item.text}</Text>
           </View>
         ))}
+
+        {booking.status === 'Pending Confirmation' ? (
+          <View style={[styles.attendRow, isRTL && { flexDirection: 'row-reverse' }]}>
+            <TouchableOpacity
+              style={[commonStyles.chip, styles.attendBtn, { backgroundColor: colors.success, borderColor: colors.success }]}
+              activeOpacity={0.8}
+              onPress={() => onAttendance(true)}
+            >
+              <Text style={[commonStyles.chipText, { color: colors.white }]}>{t('attended')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[commonStyles.chip, styles.attendBtn, { borderColor: colors.danger }]}
+              activeOpacity={0.8}
+              onPress={() => onAttendance(false)}
+            >
+              <Text style={[commonStyles.chipText, { color: colors.danger }]}>{t('notAttended')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          booking.isPast && attendanceStatus(booking.status) && (
+            <StatusText status={booking.status} t={t} colors={colors} isRTL={isRTL} />
+          )
+        )}
       </View>
 
       {!booking.isPast && (
@@ -188,7 +211,17 @@ function BookingRow({
   );
 }
 
+function StatusText({ status, t, colors, isRTL }: { status: string; t: (key: any) => string; colors: any; isRTL: boolean }) {
+  const s = attendanceStatus(status);
+  if (!s) return null;
+  const color = s.tone === 'success' ? colors.success : s.tone === 'danger' ? colors.danger : colors.textSecondary;
+  return <Text style={[styles.statusText, { color, textAlign: isRTL ? 'right' : 'left' }]}>{t(s.key)}</Text>;
+}
+
 const styles = StyleSheet.create({
+  attendRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  attendBtn: { paddingVertical: 6, paddingHorizontal: 12 },
+  statusText: { fontSize: 12, fontWeight: '600', marginTop: 6 },
   infoLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   infoText: { fontSize: 12 },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },

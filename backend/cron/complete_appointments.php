@@ -15,10 +15,7 @@ try {
     // In-Person: ended -> Pending Confirmation (the faculty confirms attendance later)
     $stmt = $conn->prepare("
         UPDATE appointment
-        SET status = CASE
-            WHEN appointment_type = 'In-Person' THEN 'Pending Confirmation'
-            ELSE 'Completed'
-        END
+               SET status = 'Pending Confirmation'
         WHERE status = 'Booked'
         AND TIMESTAMP(appointment_date, appointment_end_time) <= ?
     ");

@@ -66,6 +66,13 @@ export const cancelFacultyAppointment = async (appointmentId: string, reason?: s
     body: JSON.stringify({ appointment_id: Number(appointmentId), faculty_id: await getFacultyId(), reason }),
   });
 
+
+  export const confirmAttendance = async (appointmentId: string, attended: boolean) =>
+  request<void>('/Faculty/confirm_attendance.php', {
+    method: 'POST',
+    body: JSON.stringify({ appointment_id: Number(appointmentId), faculty_id: await getFacultyId(), attended }),
+  });
+  
 export const cancelAllOnDate = async (date: string, reason?: string) =>
   request<void>('/Faculty/cancel_all_appointments.php', {
     method: 'POST',

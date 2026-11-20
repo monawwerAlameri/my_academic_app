@@ -18,35 +18,32 @@ import { errorKey } from '../../services/errors';
 import { Booking, cancelBooking as cancelBookingApi, getBookings } from '../../services/student';
 import { commonStyles } from '../../theme/styles';
 import { canChat, chatStarted, openBookingChat } from '../../utils/chat';
-import { appointmentLabel } from '../../utils/labels';
-
+import { appointmentLabel, attendanceStatus } from '../../utils/labels';
 
 type TabKey = 'previous' | 'upcoming';
-
-
 
 export default function MyBookingScreen() {
   const { colors, t, isRTL } = useAppSettings();
   const [activeTab, setActiveTab] = useState<TabKey>('upcoming');
   const { data: bookings, loading, error, reload } = useFetch<Booking[]>(getBookings, []);
 
-const cancelBooking = (id: string) => {
-  Alert.alert(t('cancelBookingTitle'), t('cancelBookingMsg'), [
-    { text: t('no'), style: 'cancel' },
-    {
-      text: t('yesCancel'),
-      style: 'destructive',
-      onPress: async () => {
-        try {
-          await cancelBookingApi(id);
-          reload();
-        } catch (e) {
-          Alert.alert(t('error'), t(errorKey(e) as any));
-        }
+  const cancelBooking = (id: string) => {
+    Alert.alert(t('cancelBookingTitle'), t('cancelBookingMsg'), [
+      { text: t('no'), style: 'cancel' },
+      {
+        text: t('yesCancel'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await cancelBookingApi(id);
+            reload();
+          } catch (e) {
+            Alert.alert(t('error'), t(errorKey(e) as any));
+          }
+        },
       },
-    },
-  ]);
-};
+    ]);
+  };
 
   const filtered = bookings.filter((b) => (activeTab === 'upcoming' ? !b.isPast : b.isPast));
 
@@ -66,26 +63,27 @@ const cancelBooking = (id: string) => {
         </View>
 
         <View style={[commonStyles.panel, { borderColor: colors.border }]}>
-         <DataState
-  loading={loading}
-  error={error}
-  empty={filtered.length === 0}
-  emptyText={t('noBookings')}
-  onRetry={reload}
->
-  {filtered.map((booking, index) => (
-    <BookingRow
-      key={booking.id}
-      booking={booking}
-      title={appointmentLabel(booking.type, booking.subtype, t)}
-      onChat={() => openBookingChat(booking, t)}
-      isLast={index === filtered.length - 1}
-      colors={colors}
-      isRTL={isRTL}
-      onCancel={() => cancelBooking(booking.id)}
-    />
-  ))}
-</DataState>
+          <DataState
+            loading={loading}
+            error={error}
+            empty={filtered.length === 0}
+            emptyText={t('noBookings')}
+            onRetry={reload}
+          >
+            {filtered.map((booking, index) => (
+              <BookingRow
+                key={booking.id}
+                booking={booking}
+                title={appointmentLabel(booking.type, booking.subtype, t)}
+                onChat={() => openBookingChat(booking, t)}
+                isLast={index === filtered.length - 1}
+                colors={colors}
+                isRTL={isRTL}
+                onCancel={() => cancelBooking(booking.id)}
+                t={t}
+              />
+            ))}
+          </DataState>
         </View>
 
         <TouchableOpacity
@@ -116,7 +114,7 @@ function TabButton({ label, isActive, onPress, colors }: any) {
   );
 }
 
-function BookingRow({ booking, title, isLast, colors, isRTL, onCancel, onChat }: any) {
+function BookingRow({ booking, title, isLast, colors, isRTL, onCancel, onChat, t }: any) {
   const info = [
     { icon: 'person-circle-outline', text: booking.doctor },
     { icon: 'location-outline', text: booking.location },
@@ -134,13 +132,21 @@ function BookingRow({ booking, title, isLast, colors, isRTL, onCancel, onChat }:
             <Text style={[styles.infoText, { color: colors.textSecondary }]}>{item.text}</Text>
           </View>
         ))}
+
+        {/* حالة الموعد السابق: تم الحضور / لم يتم الحضور / بانتظار تأكيد الحضور / ملغي */}
+        {booking.isPast && (() => {
+          const s = attendanceStatus(booking.status);
+          if (!s) return null;
+          const color = s.tone === 'success' ? colors.success : s.tone === 'danger' ? colors.danger : colors.textSecondary;
+          return <Text style={[styles.statusText, { color, textAlign: isRTL ? 'right' : 'left' }]}>{t(s.key)}</Text>;
+        })()}
       </View>
 
-        {canChat(booking) && (
-  <TouchableOpacity activeOpacity={0.7} onPress={onChat} style={{ opacity: chatStarted(booking) ? 1 : 0.4 }}>
-    <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.primary} />
-  </TouchableOpacity>
-)}
+      {canChat(booking) && (
+        <TouchableOpacity activeOpacity={0.7} onPress={onChat} style={{ opacity: chatStarted(booking) ? 1 : 0.4 }}>
+          <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.primary} />
+        </TouchableOpacity>
+      )}
       {booking.canCancel && (
         <TouchableOpacity activeOpacity={0.7} onPress={onCancel}>
           <Ionicons name="close" size={20} color={colors.danger} />
@@ -153,5 +159,5 @@ function BookingRow({ booking, title, isLast, colors, isRTL, onCancel, onChat }:
 const styles = StyleSheet.create({
   infoLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   infoText: { fontSize: 12 },
+  statusText: { fontSize: 12, fontWeight: '600', marginTop: 6 },
 });
-

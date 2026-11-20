@@ -6,6 +6,13 @@ require_once __DIR__ . '/../config/faculty_auth.php';
 
 $faculty_id = requireFacultyAuth($conn);
 
+//   بانتظار تأكيد الحضور من الدكتور
+$now = date("Y-m-d H:i:s");
+$upd = $conn->prepare("UPDATE appointment SET status = 'Pending Confirmation' WHERE status = 'Booked' AND faculty_id = ? AND CONCAT(appointment_date, ' ', appointment_end_time) <= ?");
+$upd->bind_param("ss", $faculty_id, $now);
+$upd->execute();
+$upd->close();
+
 $stmt = $conn->prepare("
     SELECT a.appointment_id, a.student_id, s.full_name AS student_name, a.faculty_id,
            a.appointment_date, a.appointment_time, a.appointment_end_time,
