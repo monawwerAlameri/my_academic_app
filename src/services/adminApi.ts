@@ -14,6 +14,7 @@ export const ADMIN_ENDPOINTS = {
   getDashboard: ADMIN_URL + '/get_dashboard.php',
   getReports: ADMIN_URL + '/get_reports.php',
   getReviews: ADMIN_URL + '/get_reviews.php',
+  deleteReview: ADMIN_URL + '/delete_review.php',
 };
 
 export interface ApiResponse<T> {
@@ -51,7 +52,10 @@ export interface ReportsData {
 }
 
 export interface DoctorRatingSummary { facultyId: string; fullName: string; averageRating: number | null; reviewCount: number }
-export interface DoctorReviewItem { reviewId: number | string; reviewerName: string; rating: number; comment: string; reviewDate: string }
+export interface DoctorReviewItem {
+  reviewId: number | string; reviewerName: string; rating: number; comment: string; reviewDate: string;
+  studentId?: string; studentName?: string; isAnonymous?: boolean;
+}
 export interface DoctorReviewsData extends DoctorRatingSummary { reviews: DoctorReviewItem[] }
 
 // الباك ما يستخدم session: كل طلب أدمن لازم يحمل admin_id (في الرابط لـ GET وفي الـ body لـ POST)
@@ -98,4 +102,6 @@ export const adminApi = {
   getReviews: () => get<DoctorRatingSummary[]>(ADMIN_ENDPOINTS.getReviews),
   getDoctorReviews: (facultyId: string) =>
     get<DoctorReviewsData>(ADMIN_ENDPOINTS.getReviews + '?faculty_id=' + facultyId),
+  deleteReview: (reviewId: number | string) =>
+    post<{ reviewId: number }>(ADMIN_ENDPOINTS.deleteReview, { reviewId }),
 };

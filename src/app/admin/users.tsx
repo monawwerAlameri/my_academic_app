@@ -74,31 +74,29 @@ export default function AdminUsers() {
     name.replace('Dr. ', '').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
   // ---------- confirm dialog (delete / suspend / activate) ----------
-  const dialogTitle = () => {
-    if (pending === null) return '';
-    if (pending.action === 'delete') return t('deleteUserTitle');
-    if (pending.action === 'suspend') return t('suspendUserTitle');
-    return t('activateUserTitle');
-  };
-  const dialogMessage = () => {
-    if (pending === null) return '';
-    if (pending.action === 'delete') return t('deleteUserMessage');
-    if (pending.action === 'suspend') return t('suspendUserMessage');
-    return t('activateUserMessage');
-  };
-  const confirmLabel = () => {
-    if (pending === null) return '';
-    if (pending.action === 'delete') return t('delete');
-    if (pending.action === 'suspend') return t('suspend');
-    return t('activate');
-  };
-  const confirmColor = () => {
-    if (pending === null) return colors.danger;
-    if (pending.action === 'activate') return colors.success;
-    if (pending.action === 'suspend') return colors.warning;
-    return colors.danger;
-  };
-
+     // ---------- confirm dialog (delete / suspend / activate) ----------
+  const isStudent = pending?.user.role === 'student';
+  const DIALOG = {
+    delete: { title: 'deleteUserTitle', message: 'deleteUserMessage', label: 'delete', color: colors.danger },
+    suspend: {
+      title: isStudent ? 'suspendStudentTitle' : 'suspendUserTitle',
+      message: isStudent ? 'suspendStudentMessage' : 'suspendUserMessage',
+      label: 'suspend',
+      color: colors.warning,
+    },
+    activate: {
+      title: isStudent ? 'activateStudentTitle' : 'activateUserTitle',
+      message: isStudent ? 'activateStudentMessage' : 'activateUserMessage',
+      label: 'activate',
+      color: colors.success,
+    },
+  } as const;
+  const dialog = pending ? DIALOG[pending.action] : null;
+  const dialogTitle = () => (dialog ? t(dialog.title) : '');
+  const dialogMessage = () => (dialog ? t(dialog.message) : '');
+  const confirmLabel = () => (dialog ? t(dialog.label) : '');
+  const confirmColor = () => (dialog ? dialog.color : colors.danger);
+  
   const confirmAction = async () => {
     if (pending === null || busy) return;
     const { user, action } = pending;
@@ -189,20 +187,18 @@ export default function AdminUsers() {
                   ) : null}
                 </View>
 
-                <View style={[styles.actions, isRTL && { flexDirection: 'row-reverse' }]}>
-                  {u.role === 'faculty' && (
-                    <TouchableOpacity
-                      style={[styles.iconBtn, { backgroundColor: (isSuspended ? colors.success : colors.warning) + '2E' }]}
-                      activeOpacity={0.7}
-                      onPress={() => setPending({ user: u, action: isSuspended ? 'activate' : 'suspend' })}
-                    >
-                      <Ionicons
-                        name={isSuspended ? 'play-circle-outline' : 'pause-circle-outline'}
-                        size={21}
-                        color={isSuspended ? colors.success : colors.warning}
-                      />
-                    </TouchableOpacity>
-                  )}
+              <View style={[styles.actions, isRTL && { flexDirection: 'row-reverse' }]}>
+                  <TouchableOpacity
+                    style={[styles.iconBtn, { backgroundColor: (isSuspended ? colors.success : colors.warning) + '2E' }]}
+                    activeOpacity={0.7}
+                    onPress={() => setPending({ user: u, action: isSuspended ? 'activate' : 'suspend' })}
+                  >
+                    <Ionicons
+                      name={isSuspended ? 'play-circle-outline' : 'pause-circle-outline'}
+                      size={21}
+                      color={isSuspended ? colors.success : colors.warning}
+                    />
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.iconBtn, { backgroundColor: colors.dangerLight }]}
                     activeOpacity={0.7}

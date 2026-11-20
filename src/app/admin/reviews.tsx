@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AdminHeader } from '../../components/AdminHeader';
 import { AdminTabBar } from '../../components/AdminTabBar';
 import { DataState, EmptyState } from '../../components/DataState';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { useFetch } from '../../hooks/useFetch';
-import { adminApi, DoctorRatingSummary, DoctorReviewsData } from '../../services/adminApi';
+import { adminApi, DoctorRatingSummary, DoctorReviewItem, DoctorReviewsData } from '../../services/adminApi';
 import { commonStyles } from '../../theme/styles';
 
 function Stars({ value, size, color }: { value: number; size: number; color: string }) {
@@ -26,6 +26,8 @@ export default function AdminReviews() {
   const { colors, t, isRTL } = useAppSettings();
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<DoctorReviewItem | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const textAlign = isRTL ? 'right' : 'left';
   const rowDir = isRTL ? 'row-reverse' : 'row';
@@ -43,6 +45,31 @@ export default function AdminReviews() {
     if (!res.success || !res.data) throw new Error(res.message);
     return res.data;
   }, null as DoctorReviewsData | null, [selectedId]);
+
+  // الاسم اللي يشوفه الأدمن: لو التعليق مجهول نعرض "مجهول" ومعه الاسم الحقيقي
+  const reviewerLabel = (r: DoctorReviewItem) => {
+    const isAnon = r.isAnonymous ?? r.reviewerName === 'Anonymous';
+    if (!isAnon) return r.reviewerName;
+    return r.studentName ? `${t('anonymousReviewer')} (${r.studentName})` : t('anonymousReviewer');
+  };
+
+  const confirmDelete = async () => {
+    if (!toDelete || busy) return;
+    setBusy(true);
+    try {
+      const res = await adminApi.deleteReview(toDelete.reviewId);
+      if (!res.success) Alert.alert(t('error'), t('somethingWentWrong'));
+      else {
+        detail.reload();
+        list.reload();
+      }
+    } catch {
+      Alert.alert(t('error'), t('somethingWentWrong'));
+    } finally {
+      setBusy(false);
+      setToDelete(null);
+    }
+  };
 
   const doctors = list.data.filter((d) => d.fullName.toLowerCase().includes(q));
   const selected = detail.data && detail.data.facultyId === selectedId ? detail.data : null;
@@ -125,23 +152,30 @@ export default function AdminReviews() {
               </View>
 
               {selected.reviews.length === 0 && (
-          <EmptyState text={t('noReviewsYet')} />
+                <EmptyState text={t('noReviewsYet')} />
               )}
 
               {selected.reviews.map((r) => (
                 <View key={String(r.reviewId)} style={[styles.reviewCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
                   <View style={[styles.reviewTop, { flexDirection: rowDir }]}>
-                    <Text style={[commonStyles.name, { color: colors.primary }]}>
-                      {r.reviewerName === 'Anonymous' ? t('anonymousReviewer') : r.reviewerName}
-                    </Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 11 }}>{String(r.reviewDate ?? '').slice(0, 10)}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[commonStyles.name, { color: colors.primary, textAlign: textAlign }]}>{reviewerLabel(r)}</Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 11, textAlign: textAlign }}>{String(r.reviewDate ?? '').slice(0, 10)}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.deleteBtn, { backgroundColor: colors.dangerLight }]}
+                      activeOpacity={0.7}
+                      onPress={() => setToDelete(r)}
+                    >
+                      <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                    </TouchableOpacity>
                   </View>
                   <View style={{ alignSelf: isRTL ? 'flex-end' : 'flex-start', marginVertical: 6 }}>
                     <Stars value={r.rating} size={14} color={colors.accent} />
                   </View>
                   <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 19, textAlign: textAlign }}>{r.comment}</Text>
                 </View>
-              ))}
+                ))}
             </>
           )}
         </DataState>
@@ -156,6 +190,30 @@ export default function AdminReviews() {
         {content}
         <View style={{ height: 110 }} />
       </ScrollView>
+
+      {/* Confirm delete dialog */}
+      <Modal transparent animationType="fade" visible={toDelete !== null} onRequestClose={() => setToDelete(null)}>
+        <View style={styles.overlay}>
+          <View style={[styles.dialog, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <Text style={[styles.dialogTitle, { color: colors.primary, textAlign: textAlign }]}>{t('deleteReviewTitle')}</Text>
+            {toDelete !== null && (
+              <Text style={[styles.dialogBody, { color: colors.textSecondary, textAlign: textAlign }]} numberOfLines={3}>
+                "{toDelete.comment}"
+              </Text>
+            )}
+            <Text style={[styles.dialogBody, { color: colors.textSecondary, textAlign: textAlign }]}>{t('deleteReviewMessage')}</Text>
+            <View style={[styles.dialogActions, { flexDirection: rowDir }]}>
+              <TouchableOpacity style={[styles.dialogButton, { borderColor: colors.border, borderWidth: 1 }]} onPress={() => setToDelete(null)}>
+                <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.dialogButton, { backgroundColor: colors.danger, opacity: busy ? 0.6 : 1 }]} onPress={confirmDelete}>
+                <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>{t('delete')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <AdminTabBar activeTab="reviews" onTabPress={(key) => router.replace(('/admin/' + key) as any)} />
     </SafeAreaView>
   );
@@ -166,7 +224,14 @@ const styles = StyleSheet.create({
   avatar: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
   starsRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 14 },
-summary: { borderRadius: 18, padding: 18, marginBottom: 16 },
+  summary: { borderRadius: 18, padding: 18, marginBottom: 16 },
   reviewCard: { borderWidth: 1, borderRadius: 16, padding: 14, marginBottom: 12 },
-  reviewTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  reviewTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
+  deleteBtn: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  dialog: { width: '100%', borderRadius: 20, borderWidth: 1, padding: 20 },
+  dialogTitle: { fontSize: 18, fontWeight: '700', marginBottom: 10 },
+  dialogBody: { fontSize: 13, lineHeight: 19, marginBottom: 12 },
+  dialogActions: { flexDirection: 'row', gap: 10, marginTop: 6 },
+  dialogButton: { flex: 1, height: 46, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 });
