@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "my_academic_app",
+    "name": "صلة",
     "slug": "my_academic_app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,6 +12,8 @@
       "bundleIdentifier": "com.silah.academicapp"
     },
     "android": {
+      "package": "com.silah.academicapp",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#F5F5DC",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
